@@ -1,0 +1,110 @@
+/* Shared page navbar - fixed, consistent across all pages */
+
+.tw-page-navbar {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  right: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  height: 80px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-app);
+}
+
+[data-theme="light"] .tw-page-navbar {
+  border-bottom-color: var(--border);
+}
+
+.tw-page-navbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 80px;
+  min-height: 80px;
+  padding: 0 2rem;
+  width: 98%;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.tw-page-navbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+[data-theme="dark"] .tw-page-navbar-title {
+  color: #fff;
+}
+
+.tw-page-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tw-page-navbar-badge {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.tw-page-navbar-theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.tw-page-navbar-theme-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+[data-theme="light"] .tw-page-navbar-theme-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.tw-page-navbar-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tw-page-navbar-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+[data-theme="light"] .tw-page-navbar-logout-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+
+.tw-page-navbar-logout-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}

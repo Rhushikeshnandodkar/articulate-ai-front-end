@@ -82,12 +82,17 @@ body {
 }
 
 .tw-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 280px;
   flex-shrink: 0;
   background: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
   font-family: 'DM Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
 }
 
 .tw-sidebar-inner {
@@ -95,6 +100,7 @@ body {
   flex-direction: column;
   height: 100%;
   padding: 0 1.25rem 1.25rem;
+  overflow: hidden;
 }
 
 .tw-sidebar-brand {
@@ -256,6 +262,32 @@ body {
   height: 1.125rem;
 }
 
+.tw-main-wrap {
+  flex: 1;
+  margin-left: 280px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+  min-width: 0;
+}
+
+.tw-main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 80px 0 2.5rem 0;
+}
+
+.tw-main-content-inner {
+  width: 98%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Legacy - kept for any direct .tw-main usage */
 .tw-main {
   flex: 1;
   overflow: auto;

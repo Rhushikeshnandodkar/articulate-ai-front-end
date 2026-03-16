@@ -2,10 +2,12 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { PageNavbarProvider } from '../contexts/PageNavbarContext';
+import PageNavbar from './PageNavbar';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },
-  { to: '/voice', label: 'Practice', Icon: PracticeIcon },
+  { to: '/topics', label: 'Topics', Icon: TopicsIcon },
   { to: '/profile', label: 'Settings', Icon: SettingsIcon },
 ];
 
@@ -108,54 +110,61 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="tw-root">
-      <aside className="tw-sidebar">
-        <div className="tw-sidebar-inner">
-          <div className="tw-sidebar-brand">
-            <Link to="/dashboard" className="tw-sidebar-brand-link">
-              <LogoIcon className="tw-sidebar-brand-icon" />
-              <span className="tw-sidebar-brand-text">articulate<span className="tw-sidebar-brand-dot">.ai</span></span>
-            </Link>
+    <PageNavbarProvider>
+      <div className="tw-root">
+        <aside className="tw-sidebar">
+          <div className="tw-sidebar-inner">
+            <div className="tw-sidebar-brand">
+              <Link to="/dashboard" className="tw-sidebar-brand-link">
+                <LogoIcon className="tw-sidebar-brand-icon" />
+                <span className="tw-sidebar-brand-text">articulate<span className="tw-sidebar-brand-dot">.ai</span></span>
+              </Link>
+            </div>
+            <nav className="tw-nav">
+              {navItems.map(({ to, label, Icon, badge }) => {
+                const isActive =
+                  (location.pathname === to && (to !== '/dashboard' || label === 'Dashboard')) ||
+                  (to === '/topics' && location.pathname === '/voice') ||
+                  (to === '/topics' && location.pathname.startsWith('/conversations'));
+                return (
+                  <Link
+                    key={label}
+                    to={to}
+                    className={`tw-nav-link ${isActive ? 'tw-nav-link-active' : 'tw-nav-link-inactive'}`}
+                  >
+                    <Icon className="tw-nav-icon" />
+                    <span>{label}</span>
+                    {badge != null && <span className="tw-nav-badge">{badge}</span>}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="tw-sidebar-footer">
+              <button type="button" className="tw-sidebar-upgrade">
+                <StarIcon className="tw-nav-icon" />
+                <span>Upgrade Pro</span>
+              </button>
+              <button type="button" className="tw-sidebar-util" title="Help" aria-label="Help">
+                <HelpIcon className="tw-nav-icon" />
+                <span>Help</span>
+              </button>
+              <button type="button" onClick={handleLogout} className="tw-sidebar-util" title="Log out" aria-label="Log out">
+                <LogoutIcon className="tw-nav-icon" />
+                <span>Log Out</span>
+              </button>
+            </div>
           </div>
-          <nav className="tw-nav">
-            {navItems.map(({ to, label, Icon, badge }) => {
-              const isPractice = label === 'Practice';
-              const isActive =
-                (location.pathname === to && (to !== '/dashboard' || label === 'Dashboard')) ||
-                (isPractice && location.pathname.startsWith('/conversations'));
-              return (
-                <Link
-                  key={label}
-                  to={to}
-                  className={`tw-nav-link ${isActive ? 'tw-nav-link-active' : 'tw-nav-link-inactive'}`}
-                >
-                  <Icon className="tw-nav-icon" />
-                  <span>{label}</span>
-                  {badge != null && <span className="tw-nav-badge">{badge}</span>}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="tw-sidebar-footer">
-            <button type="button" className="tw-sidebar-upgrade">
-              <StarIcon className="tw-nav-icon" />
-              <span>Upgrade Pro</span>
-            </button>
-            <button type="button" className="tw-sidebar-util" title="Help" aria-label="Help">
-              <HelpIcon className="tw-nav-icon" />
-              <span>Help</span>
-            </button>
-            <button type="button" onClick={handleLogout} className="tw-sidebar-util" title="Log out" aria-label="Log out">
-              <LogoutIcon className="tw-nav-icon" />
-              <span>Log Out</span>
-            </button>
-          </div>
-        </div>
-      </aside>
+        </aside>
 
-      <main className="tw-main">
-        <Outlet />
-      </main>
-    </div>
+        <div className="tw-main-wrap">
+          <PageNavbar />
+          <main className="tw-main-content">
+            <div className="tw-main-content-inner">
+              <Outlet />
+            </div>
+          </main>
+        </div>
+      </div>
+    </PageNavbarProvider>
   );
 }

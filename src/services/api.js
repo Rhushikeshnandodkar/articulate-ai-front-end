@@ -133,12 +133,13 @@ const ARTICULATE_BASE = `${API_ORIGIN}/api/articulate`;
  * - audioBlob: optional; if provided, backend uses ElevenLabs STT to transcribe (captures um, uh, etc.).
  * - welcome: if true and conversationId set, returns AI welcome message (first message for new conversation).
  */
-export async function voiceChat({ text = '', conversationId = null, audioBlob = null, welcome = false, spokenDurationSeconds = 0 }) {
+export async function voiceChat({ text = '', conversationId = null, audioBlob = null, welcome = false, spokenDurationSeconds = 0, solo = false }) {
   let res;
   if (audioBlob != null) {
     const form = new FormData();
     form.append('audio', audioBlob, 'audio.webm');
     if (conversationId != null) form.append('conversation_id', String(conversationId));
+    if (solo) form.append('solo', '1');
     if (spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0) {
       form.append('spoken_duration_seconds', String(spokenDurationSeconds.toFixed(2)));
     }
@@ -156,6 +157,7 @@ export async function voiceChat({ text = '', conversationId = null, audioBlob = 
       ...(spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0
         ? { spoken_duration_seconds: spokenDurationSeconds }
         : {}),
+      ...(solo ? { solo: true } : {}),
     };
     res = await fetch(`${ARTICULATE_BASE}/voice/`, {
       method: 'POST',
@@ -204,9 +206,28 @@ export async function voiceChat({ text = '', conversationId = null, audioBlob = 
   throw { error: 'Invalid response from voice API.' };
 }
 
+/** Get today's daily practice topic (one per user per day). */
+export async function getDailyTopic() {
+  const res = await fetch(`${ARTICULATE_BASE}/daily-topic/`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw data || { error: 'Failed to fetch daily topic.' };
+  return data;
+}
+
 /** Get 3-5 personalized topic suggestions from LLM based on user profile. */
 export async function getSuggestedTopics() {
   const res = await fetch(`${ARTICULATE_BASE}/suggested-topics/`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
+export async function getTopics() {
+  const res = await fetch(`${ARTICULATE_BASE}/topics/`, {
     headers: getAuthHeaders(),
   });
   const data = await res.json();

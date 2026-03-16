@@ -1,6 +1,7 @@
 import '../styles/profile.css';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { usePageNavbar } from '../contexts/PageNavbarContext';
 import { getProfile, updateProfile, getConversations, getPlans, subscribeToPlan } from '../services/api';
 
 const PROFESSION_OPTIONS = [
@@ -68,6 +69,25 @@ export default function Profile() {
   });
 
   const [profileCompleted, setProfileCompleted] = useState(false);
+  const { setPageNavbar } = usePageNavbar();
+
+  useEffect(() => {
+    setPageNavbar({
+      title: 'Profile',
+      rightActions: (
+        <button
+          type="button"
+          className="tw-profile-edit-btn"
+          onClick={() => setModalOpen(true)}
+          title="Edit profile"
+          aria-label="Edit profile"
+        >
+          <PencilIcon />
+        </button>
+      ),
+    });
+    return () => setPageNavbar({});
+  }, [setPageNavbar]);
 
   const loadProfile = () => {
     getProfile()
@@ -181,19 +201,6 @@ export default function Profile() {
 
   return (
     <div className="tw-profile-page">
-      <div className="tw-profile-header">
-        <h1 className="tw-profile-title">Profile</h1>
-        <button
-          type="button"
-          className="tw-profile-edit-btn"
-          onClick={() => setModalOpen(true)}
-          title="Edit profile"
-          aria-label="Edit profile"
-        >
-          <PencilIcon />
-        </button>
-      </div>
-
       <section className="tw-profile-card">
         <h2 className="tw-profile-card-title">About</h2>
         <div className="tw-profile-row">

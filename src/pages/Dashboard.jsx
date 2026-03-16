@@ -2,9 +2,9 @@ import '../styles/dashboard.css';
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetchUser, logout } from '../store/slices/authSlice';
-import { useTheme } from '../contexts/ThemeContext';
-import { getConversations, createConversation, getProfile, getSuggestedTopics } from '../services/api';
+import { fetchUser } from '../store/slices/authSlice';
+import { usePageNavbar } from '../contexts/PageNavbarContext';
+import { getConversations, createConversation, getProfile, getSuggestedTopics, getDailyTopic } from '../services/api';
 
 const FALLBACK_TOPICS = [
   { title: 'Job interview', category: 'Career', description: 'Practice answering common interview questions.' },
@@ -87,30 +87,6 @@ function BriefcaseIcon() {
   );
 }
 
-function LogoutIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
-  );
-}
-
 function ChevronLeftIcon() {
   return (
     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -147,7 +123,6 @@ function RefreshIcon() {
 export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [conversations, setConversations] = useState([]);
   const [recommendedTopics, setRecommendedTopics] = useState([]);
@@ -161,6 +136,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const topicsScrollRef = useRef(null);
   const [topicsRefreshing, setTopicsRefreshing] = useState(false);
+  const [dailyTopic, setDailyTopic] = useState(null);
 
   const scrollTopics = (direction) => {
     const el = topicsScrollRef.current;
@@ -190,6 +166,20 @@ export default function Dashboard() {
       })
       .catch(() => setProfileLoaded(true));
   }, [isAuthenticated, navigate]);
+
+  // Load today's daily practice topic (one per user per day).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getDailyTopic()
+      .then((data) => {
+        if (data && data.title) {
+          setDailyTopic(data);
+        }
+      })
+      .catch(() => {
+        // Ignore errors; dashboard still works without daily topic.
+      });
+  }, [isAuthenticated]);
 
   const loadTopics = () => {
     if (!isAuthenticated) return;
@@ -262,6 +252,10 @@ export default function Dashboard() {
       typeof topicName === 'object'
         ? (topicName.description || topicName.desc || '')
         : '';
+    const topicOpeningQuestion =
+      typeof topicName === 'object'
+        ? (topicName.openingQuestion || topicName.opening_question || topicName.question || '')
+        : '';
     if (!t) {
       setError('Enter or select a topic.');
       return;
@@ -275,6 +269,7 @@ export default function Dashboard() {
           conversationId: data.id,
           topic: data.topic,
           topicDescription,
+          topicOpeningQuestion,
         },
       });
     } catch (err) {
@@ -290,18 +285,37 @@ export default function Dashboard() {
   };
 
   const displayName = user?.username || 'Alex';
+  const { setPageNavbar } = usePageNavbar();
+
+  useEffect(() => {
+    setPageNavbar({ title: `Welcome, ${displayName}` });
+    return () => setPageNavbar({});
+  }, [displayName, setPageNavbar]);
   const suggestedTopicObj = Array.isArray(recommendedTopics) && recommendedTopics.length > 0
     ? (typeof recommendedTopics[0] === 'string'
-        ? { title: recommendedTopics[0], description: 'Practice your communication skills.' }
+        ? {
+            title: recommendedTopics[0],
+            description: 'Practice your communication skills.',
+            openingQuestion: `In your own words, what do you think about ${recommendedTopics[0]} in today’s world?`,
+          }
         : {
             title: recommendedTopics[0].title || recommendedTopics[0].name || String(recommendedTopics[0]),
             description: recommendedTopics[0].description || recommendedTopics[0].desc || 'Practice your communication skills.',
+            openingQuestion:
+              recommendedTopics[0].opening_question ||
+              recommendedTopics[0].openingQuestion ||
+              recommendedTopics[0].question ||
+              `In your own words, what do you think about ${recommendedTopics[0].title || recommendedTopics[0].name || String(recommendedTopics[0])} in today’s world?`,
           })
-    : { title: 'Technology', description: 'Share your thoughts on how technology is changing daily life.' };
+    : {
+        title: 'Technology',
+        description: 'Share your thoughts on how technology is changing daily life.',
+        openingQuestion: 'What is one way technology has changed your daily life in the last few years, and how do you feel about that change?',
+      };
   const suggestedTopic = suggestedTopicObj.title;
   const weeklySessions = profile?.total_sessions ?? 3;
-  const weeklyGoal = 5;
-  const weeklyPct = Math.min(100, Math.round((weeklySessions / weeklyGoal) * 100));
+  const currentBadge = profile?.badge_level || 'none';
+  const gameScore = profile?.game_score ?? 0;
   const latestConv = conversations.length > 0 ? conversations[0] : null;
   const minutesUsed = profile?.monthly_minutes_used ?? 0;
   const minutesLimit = profile?.minutes_limit ?? 10;
@@ -341,12 +355,28 @@ export default function Dashboard() {
     return { date: d, iso, completed };
   });
   const topicCards = recommendedTopics.map((t) => {
-    if (typeof t === 'string') return { title: t, category: 'General', description: 'Practice your communication skills.', tagClass: 'tw-topic-tag-blue' };
+    if (typeof t === 'string') {
+      return {
+        title: t,
+        category: 'General',
+        description: 'Practice your communication skills.',
+        openingQuestion: `In your own words, what do you think about ${t} in today’s world?`,
+        tagClass: 'tw-topic-tag-blue',
+      };
+    }
+    const category = t.category || t.tag || 'General';
+    const description = t.description || t.desc || 'Practice your communication skills.';
+    const openingQuestion =
+      t.opening_question ||
+      t.openingQuestion ||
+      t.question ||
+      `In your own words, what do you think about ${t.title || t.name || String(t)} in today’s world?`;
     return {
       title: t.title || t.name || String(t),
-      category: t.category || t.tag || 'General',
-      description: t.description || t.desc || 'Practice your communication skills.',
-      tagClass: getTagClass(t.category || t.tag),
+      category,
+      description,
+      openingQuestion,
+      tagClass: getTagClass(category),
     };
   });
 
@@ -367,44 +397,100 @@ export default function Dashboard() {
 
   return (
     <div className="tw-dashboard">
-      <div className="tw-dashboard-header-wrap">
-        <header className="tw-dashboard-header">
-          <h1 className="tw-dashboard-welcome">Welcome, {displayName}</h1>
-          <div className="tw-dashboard-header-right">
-            <span className="tw-dashboard-plan-badge">Free Plan</span>
-            <button type="button" onClick={toggleTheme} className="tw-dashboard-theme-btn" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
-            <button type="button" onClick={() => { dispatch(logout()); navigate('/login', { replace: true }); }} className="tw-dashboard-logout-btn" aria-label="Log out">
-              <LogoutIcon />
-              <span>Log out</span>
-            </button>
-          </div>
-        </header>
-      </div>
-
       <div className="tw-dashboard-grid">
         <section className="tw-dashboard-card">
-          <h2 className="tw-dashboard-ready-title">Ready to practice?</h2>
-          <p className="tw-dashboard-ready-desc">
-            Your AI partner is ready. Today&apos;s suggested topic is based on your interest in {suggestedTopic}.
-          </p>
-          <div className="tw-dashboard-ready-actions">
-            <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-primary">
-              {starting ? 'Starting…' : 'Start AI Session'}
-            </button>
-            <button type="button" onClick={() => {}} className="tw-btn-secondary">Choose Topic</button>
-          </div>
+          <h2 className="tw-dashboard-ready-title">Daily practice topic</h2>
+          {dailyTopic ? (
+            <>
+              <p className="tw-dashboard-daily-topic-title">
+                {dailyTopic.title}
+              </p>
+              <p className="tw-dashboard-ready-desc tw-dashboard-ready-desc-sub">
+                {dailyTopic.description}
+              </p>
+              <div className="tw-dashboard-ready-actions">
+                <button
+                  type="button"
+                  onClick={() => startPractice({ title: dailyTopic.title, description: dailyTopic.description })}
+                  disabled={starting}
+                  className="tw-btn-primary"
+                >
+                  {starting ? 'Starting…' : 'Start today\'s topic'}
+                </button>
+                <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-secondary">
+                  Or use recommended topic
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="tw-dashboard-ready-desc">
+                Your AI partner is ready. Today&apos;s suggested topic is based on your interest in {suggestedTopic}.
+              </p>
+              <div className="tw-dashboard-ready-actions">
+                <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-primary">
+                  {starting ? 'Starting…' : 'Start AI Session'}
+                </button>
+                <button type="button" onClick={() => {}} className="tw-btn-secondary">Choose Topic</button>
+              </div>
+            </>
+          )}
         </section>
 
-        <section className="tw-dashboard-card">
-          <h3 className="tw-dashboard-goal-title">Weekly Goal</h3>
-          <p className="tw-dashboard-goal-value">{weeklySessions}/<span>{weeklyGoal} sessions</span></p>
-          <div className="tw-dashboard-goal-bar-wrap">
-            <div className="tw-dashboard-goal-bar">
-              <div className="tw-dashboard-goal-bar-fill" style={{ width: `${weeklyPct}%` }} />
+        <section className="tw-dashboard-card tw-dashboard-badge-card">
+          <h3 className="tw-dashboard-goal-title">Table Topic Badge</h3>
+          <div className="tw-dashboard-badge-main">
+            {profile?.current_badge_icon ? (
+              <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
+                <img
+                  src={profile.current_badge_icon}
+                  alt={`${currentBadge} badge`}
+                  className="tw-dashboard-badge-img"
+                />
+              </div>
+            ) : (
+              <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
+                <span className="tw-dashboard-badge-symbol">
+                  {currentBadge === 'diamond' && '◆'}
+                  {currentBadge === 'gold' && '★'}
+                  {currentBadge === 'silver' && '☆'}
+                  {currentBadge === 'bronze' && '⬤'}
+                </span>
+              </div>
+            )}
+            <div className="tw-dashboard-badge-text">
+              <p className="tw-dashboard-badge-name">
+                {currentBadge.charAt(0).toUpperCase() + currentBadge.slice(1)}
+              </p>
+              <div className="tw-dashboard-badge-progress-wrap">
+                <div className="tw-dashboard-badge-scores">
+                  <span className="tw-dashboard-badge-score-current">{gameScore}</span>
+                  {profile?.badge_progress?.next_badge_name ? (
+                    <>
+                      <span className="tw-dashboard-badge-score-sep">/</span>
+                      <span className="tw-dashboard-badge-score-next">
+                        {profile.badge_progress.next_threshold} ({profile.badge_progress.next_badge_name})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="tw-dashboard-badge-score-label"> score</span>
+                  )}
+                </div>
+                {profile?.badge_progress?.next_badge_name && (
+                  <div className="tw-dashboard-badge-bar">
+                    <div
+                      className="tw-dashboard-badge-bar-fill"
+                      style={{ width: `${profile.badge_progress.progress_pct}%` }}
+                    />
+                  </div>
+                )}
+                <p className="tw-dashboard-badge-sub">
+                  {profile?.badge_progress?.next_badge_name
+                    ? `${profile.badge_progress.remaining} to ${profile.badge_progress.next_badge_name}`
+                    : 'Table topics completed increase your score and unlock higher badges.'}
+                </p>
+              </div>
             </div>
-            <span className="tw-dashboard-goal-pct">{weeklyPct}%</span>
           </div>
         </section>
       </div>

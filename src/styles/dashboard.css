@@ -1,9 +1,10 @@
 /* Dashboard - CommAI dark */
 
 .tw-dashboard {
-  padding: 0 2rem 2.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0 0 2.5rem;
+  margin: 1rem auto 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .tw-dashboard-loading {
@@ -131,17 +132,29 @@
 
 /* Ready to practice - smaller */
 .tw-dashboard-ready-title {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #fff;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.4rem;
 }
 
 .tw-dashboard-ready-desc {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-dim);
   margin: 0 0 0.75rem;
-  line-height: 1.45;
+  line-height: 1.5;
+}
+
+.tw-dashboard-ready-desc-sub {
+  margin-top: -0.25rem;
+  font-size: 0.8125rem;
+}
+
+.tw-dashboard-daily-topic-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.35rem;
 }
 
 .tw-dashboard-ready-actions {
@@ -197,6 +210,135 @@
   font-weight: 500;
   color: #fff;
   min-width: 2.25rem;
+}
+
+.tw-dashboard-badge-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tw-dashboard-badge-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tw-dashboard-badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.tw-dashboard-badge-img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
+.tw-dashboard-badge-none {
+  background: rgba(148, 163, 184, 0.18);
+  color: #e5e7eb;
+}
+
+.tw-dashboard-badge-bronze {
+  background: radial-gradient(circle at 30% 30%, #f59e0b, #92400e);
+  color: #fffbeb;
+}
+
+.tw-dashboard-badge-silver {
+  background: radial-gradient(circle at 30% 30%, #e5e7eb, #6b7280);
+  color: #f9fafb;
+}
+
+.tw-dashboard-badge-gold {
+  background: radial-gradient(circle at 30% 30%, #fde68a, #b45309);
+  color: #111827;
+}
+
+.tw-dashboard-badge-diamond {
+  background: radial-gradient(circle at 30% 30%, #a5f3fc, #0369a1);
+  color: #ecfeff;
+}
+
+.tw-dashboard-badge-symbol {
+  text-shadow: 0 0 8px rgba(15, 23, 42, 0.6);
+}
+
+.tw-dashboard-badge-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tw-dashboard-badge-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.tw-dashboard-badge-score {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.tw-dashboard-badge-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tw-dashboard-badge-scores {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tw-dashboard-badge-score-current {
+  color: #fff;
+}
+
+.tw-dashboard-badge-score-sep {
+  color: var(--text-dim);
+  margin: 0 0.2rem;
+}
+
+.tw-dashboard-badge-score-next {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.tw-dashboard-badge-score-label {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.tw-dashboard-badge-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.tw-dashboard-badge-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.tw-dashboard-badge-sub {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 0;
 }
 
 /* Section title with View all */
@@ -373,6 +515,12 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.tw-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
 }
 
 /* Practice stats - one row, double height, eye-catching color boxes */
@@ -851,4 +999,156 @@
 .tw-muted {
   font-size: 0.875rem;
   color: var(--text-dim);
+}
+
+/* Topics table page */
+.tw-topics-filters {
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), rgba(15, 23, 42, 0.9));
+}
+
+.tw-topics-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tw-input-with-icon {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.tw-input-icon {
+  position: absolute;
+  inset-y: 0;
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--text-dim);
+}
+
+.tw-input-with-leading {
+  padding-left: 2.25rem;
+}
+
+.tw-topics-search {
+  border-radius: 9999px;
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+.tw-topics-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 140px;
+}
+
+.tw-topics-filter-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.tw-select {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-app);
+  color: var(--text);
+}
+
+.tw-topics-table-card {
+  margin-bottom: 1.25rem;
+}
+
+.tw-topics-table-card-wide {
+  max-width: none;
+}
+
+.tw-topics-table-wrap {
+  margin-top: 0.25rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.tw-topics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tw-topics-table thead {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.tw-topics-table th,
+.tw-topics-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.tw-topics-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.6);
+}
+
+.tw-topics-table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.tw-topics-table tbody tr:nth-child(odd) {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.tw-topics-title-cell {
+  font-weight: 500;
+  color: #fff;
+}
+
+.tw-topics-desc-cell {
+  max-width: 420px;
+  color: var(--text-dim);
+}
+
+.tw-topics-time-hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin: 0.25rem 0 0.15rem;
+}
+
+.tw-topics-completed {
+  font-size: 0.75rem;
+  color: #a7ed02;
+  margin: 0 0 0.5rem;
+}
+
+.tw-topics-not-attempted {
+  color: var(--text-dim);
+}
+
+.tw-topic-tag-beginner {
+  background: rgba(52, 211, 153, 0.18);
+  color: #6ee7b7;
+}
+
+.tw-topic-tag-intermediate {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.tw-topic-tag-advanced {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
 }

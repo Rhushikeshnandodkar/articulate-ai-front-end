@@ -1,6 +1,7 @@
 import '../styles/voice.css';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { usePageNavbar } from '../contexts/PageNavbarContext';
 import { voiceChat, endConversation } from '../services/api';
 
 const SpeechRecognition =
@@ -40,6 +41,9 @@ export default function VoiceChat() {
     (searchParams.get('conversation') ? Number(searchParams.get('conversation')) : null);
   const topic = location.state?.topic ?? '';
   const topicDescription = location.state?.topicDescription ?? '';
+  const topicOpeningQuestion = location.state?.topicOpeningQuestion ?? '';
+  const soloMode = location.state?.solo ?? (searchParams.get('solo') === '1');
+  const timeLimitSeconds = Number(location.state?.timeLimitSeconds ?? 180) || 180;
 
   const [listening, setListening] = useState(false);
   const [displayTranscript, setDisplayTranscript] = useState('');
@@ -64,17 +68,43 @@ export default function VoiceChat() {
   listeningRef.current = listening;
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [spokenTotalSeconds, setSpokenTotalSeconds] = useState(0);
+  const [displaySeconds, setDisplaySeconds] = useState(0);
+
+  // Wall-clock elapsed timer for normal AI sessions (kept as before).
   useEffect(() => {
     if (!conversationId) return;
+    if (soloMode) return;
     sessionStartRef.current = sessionStartRef.current ?? Date.now();
     const t = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+      setElapsedSeconds((secs) => secs + 1);
     }, 1000);
     return () => clearInterval(t);
-  }, [conversationId]);
-  const elapsedDisplay = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
-  // Session progress: 10% per minute, assuming a 10-minute session target.
-  const sessionProgress = Math.min(100, Math.floor(elapsedSeconds / 60) * 10);
+  }, [conversationId, soloMode]);
+
+  // In solo mode, drive the visible timer from total spoken time + live mic time.
+  useEffect(() => {
+    if (!soloMode) return;
+    // Base display on accumulated spoken time when not listening.
+    setDisplaySeconds(spokenTotalSeconds);
+    if (!listening) return;
+    const startAt = performance.now();
+    const base = spokenTotalSeconds;
+    const id = setInterval(() => {
+      const now = performance.now();
+      const live = Math.max(0, (now - startAt) / 1000);
+      setDisplaySeconds(base + live);
+    }, 500);
+    return () => clearInterval(id);
+  }, [soloMode, listening, spokenTotalSeconds]);
+
+  const effectiveSeconds = soloMode ? displaySeconds : elapsedSeconds;
+  const elapsedDisplay = `${String(Math.floor(effectiveSeconds / 60)).padStart(2, '0')}:${String(
+    Math.floor(effectiveSeconds % 60),
+  ).padStart(2, '0')}`;
+  const sessionProgress = soloMode
+    ? Math.min(100, Math.round((spokenTotalSeconds / timeLimitSeconds) * 100))
+    : Math.min(100, Math.floor(elapsedSeconds / 60) * 10);
   const lastAssistantMessage = transcriptLines.filter((l) => l.role === 'assistant').slice(-1)[0]?.content ?? '';
   const upcomingPlaceholders = [
     'Leadership experience and management style',
@@ -91,7 +121,7 @@ export default function VoiceChat() {
   }, [transcriptLines, displayTranscript]);
 
   const playAudio = useCallback((url, options = {}) => {
-    if (!url) return;
+    if (!url || soloMode) return;
     const { revokeOnEnd = false } = options;
     const audio = new Audio(url);
     audio.volume = 1;
@@ -139,14 +169,14 @@ export default function VoiceChat() {
     safetyId = setTimeout(() => {
       if (!cleaned) setStatus('idle');
     }, 5000);
-  }, []);
+  }, [soloMode]);
 
   const playPendingReply = useCallback(() => {
-    if (!pendingPlayUrl) return;
+    if (!pendingPlayUrl || soloMode) return;
     setError(null);
     setStatus('playing');
     playAudio(pendingPlayUrl, { revokeOnEnd: false });
-  }, [pendingPlayUrl, playAudio]);
+  }, [pendingPlayUrl, playAudio, soloMode]);
 
   const sendToBackend = useCallback(async (audioBlobOrText, spokenDurationSeconds = 0) => {
     const isAudio = audioBlobOrText instanceof Blob;
@@ -154,17 +184,17 @@ export default function VoiceChat() {
     setError(null);
     try {
       const { blob, text: aiText } = isAudio
-        ? await voiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds })
-        : await voiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds });
+        ? await voiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode })
+        : await voiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode });
       let url = null;
-      if (blob) {
+      if (!soloMode && blob) {
         url = URL.createObjectURL(blob);
         setPendingPlayUrl((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return url;
         });
       } else {
-        // Text-only reply (builder plan) – clear any pending audio.
+        // Text-only reply (builder plan) or solo mode – clear any pending audio.
         setPendingPlayUrl((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return null;
@@ -174,8 +204,23 @@ export default function VoiceChat() {
       setTranscriptLines((prev) => [
         ...prev,
         { role: 'user', content: userDisplay },
-        { role: 'assistant', content: aiText || '(reply)' },
+        ...(!soloMode ? [{ role: 'assistant', content: aiText || '(reply)' }] : []),
       ]);
+
+      if (soloMode && spokenDurationSeconds > 0) {
+        setSpokenTotalSeconds((prev) => {
+          const next = prev + spokenDurationSeconds;
+          if (conversationId && next >= timeLimitSeconds) {
+            endConversation(conversationId)
+              .then(() => {
+                navigate(`/conversations/${conversationId}`, { replace: true });
+              })
+              .catch(() => {});
+          }
+          return next;
+        });
+      }
+
       hasSpokenRef.current = true;
       setStatus('idle');
       if (url) {
@@ -185,22 +230,33 @@ export default function VoiceChat() {
       setError(err?.error || err?.message || String(err));
       setStatus('error');
     }
-  }, [playAudio, conversationId]);
+  }, [playAudio, conversationId, soloMode, navigate, timeLimitSeconds]);
 
   useEffect(() => {
     if (!conversationId) return;
     if (transcriptLines.length > 0) return;
+    if (soloMode) {
+      const content = topicDescription
+        ? topicDescription
+        : topic
+          ? `Speak for a few minutes about: ${topic}. Focus on fluency and clarity.`
+          : 'Speak for a few minutes on any topic. Focus on fluency and clarity.';
+      setTranscriptLines([{ role: 'assistant', content }]);
+      return;
+    }
     let content;
     if (topic) {
-      if (topicDescription) {
-        content = `Today's topic: ${topic}.
-
-Here is how you can start:
-- First, briefly set the scene in 1–2 sentences (who, where, when).
-- Then explain your thoughts, decisions, or feelings in 3–4 sentences.
-- Finally, add one concrete example or short story related to this situation.
-
-Use simple English and speak as if you are talking to a friend. When you're ready, click Start and begin with the first sentence.`;
+      if (topicDescription || topicOpeningQuestion) {
+        const introLine = topicDescription
+          ? topicDescription
+          : `Today's topic: ${topic}.`;
+        const openingQ = topicOpeningQuestion || `In your own words, what do you think about ${topic} in today’s world?`;
+        content = `${introLine}
+        
+First question:
+${openingQ}
+        
+When you're ready, click Start and answer in your own words.`;
       } else {
         content = `Welcome! Let's practice ${topic}. When you're ready, click Start and tell me in your own words what you'd like to work on.`;
       }
@@ -208,7 +264,7 @@ Use simple English and speak as if you are talking to a friend. When you're read
       content = "Welcome! When you're ready, click Start and tell me what you would like to practice today.";
     }
     setTranscriptLines([{ role: 'assistant', content }]);
-  }, [conversationId, topic, topicDescription, transcriptLines.length]);
+  }, [conversationId, soloMode, topic, topicDescription, topicOpeningQuestion, transcriptLines.length]);
 
   useEffect(() => {
     if (!SpeechRecognition) return;
@@ -413,13 +469,30 @@ Use simple English and speak as if you are talking to a friend. When you're read
     };
   }, [conversationId]);
 
-  const requestEndSession = () => {
+  const requestEndSession = useCallback(() => {
     if (!conversationId) {
       navigate('/dashboard', { replace: true });
       return;
     }
     setShowEndConfirm(true);
-  };
+  }, [conversationId, navigate]);
+
+  const { setPageNavbar } = usePageNavbar();
+  useEffect(() => {
+    const title = soloMode ? 'Solo Speaking Practice' : 'AI Communication Practice';
+    const endBtn = conversationId ? (
+      <button
+        type="button"
+        className="tw-voice-end-btn"
+        onClick={requestEndSession}
+        disabled={ending}
+      >
+        {ending ? 'Ending…' : 'End Session'}
+      </button>
+    ) : null;
+    setPageNavbar({ title, rightActions: endBtn });
+    return () => setPageNavbar({});
+  }, [soloMode, conversationId, ending, requestEndSession, setPageNavbar]);
 
   // Intercept browser back button while on the practice page and show the end-session popup instead.
   useEffect(() => {
@@ -444,25 +517,6 @@ Use simple English and speak as if you are talking to a friend. When you're read
 
   return (
     <div className="tw-voice-page">
-      <header className="tw-voice-header">
-        <div className="tw-voice-header-left">
-          <div className="tw-voice-logo">AI</div>
-          <h1 className="tw-voice-title">AI Communication Practice</h1>
-        </div>
-        <div className="tw-voice-header-actions">
-          {conversationId && (
-            <button
-              type="button"
-              className="tw-voice-end-btn"
-              onClick={requestEndSession}
-              disabled={ending}
-            >
-              {ending ? 'Ending…' : 'End Session'}
-            </button>
-          )}
-        </div>
-      </header>
-
       <div className="tw-voice-body">
         <aside className="tw-voice-sidebar">
           <h2 className="tw-voice-sidebar-title">Session Stats</h2>
@@ -482,7 +536,12 @@ Use simple English and speak as if you are talking to a friend. When you're read
             <p className="tw-voice-stat-label">Current Topic</p>
             <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
             <p className="tw-voice-stat-desc">
-              {topic ? 'Building meaningful connections' : 'Speak and get real-time feedback'}
+              {topicDescription ||
+                (topic
+                  ? 'Speak for the full time about this topic.'
+                  : soloMode
+                    ? 'Speak for a few minutes without interruptions.'
+                    : 'Speak and get real-time feedback')}
             </p>
           </div>
 
@@ -499,8 +558,14 @@ Use simple English and speak as if you are talking to a friend. When you're read
 
         <main className="tw-voice-main">
           <section className="tw-voice-card">
-            <h3 className="tw-voice-card-title">Voice Practice Session</h3>
-            <p className="tw-voice-card-sub">Speak naturally and receive real-time feedback</p>
+            <h3 className="tw-voice-card-title">
+              {soloMode ? 'Solo speaking timer' : 'Voice Practice Session'}
+            </h3>
+            <p className="tw-voice-card-sub">
+              {soloMode
+                ? 'Speak continuously until the timer ends. There is no AI audio in this mode.'
+                : 'Speak naturally and receive real-time feedback'}
+            </p>
             <div className={`tw-voice-wave-wrap ${listening && status === 'listening' ? 'tw-voice-wave-active' : ''}`}>
               <span /><span /><span /><span /><span /><span /><span />
             </div>
@@ -530,10 +595,10 @@ Use simple English and speak as if you are talking to a friend. When you're read
                 Listening…
               </div>
             )}
-            {status === 'sending' && <div className="tw-voice-status-line">Getting reply…</div>}
-            {status === 'playing' && <div className="tw-voice-status-line">Playing AI reply…</div>}
+            {status === 'sending' && !soloMode && <div className="tw-voice-status-line">Getting reply…</div>}
+            {status === 'playing' && !soloMode && <div className="tw-voice-status-line">Playing AI reply…</div>}
             {error && <div className="tw-voice-error">{error}</div>}
-            {pendingPlayUrl && (
+            {pendingPlayUrl && !soloMode && (
               <div className="tw-voice-play-reply">
                 <button type="button" className="tw-btn-primary" onClick={playPendingReply}>
                   {autoplayBlocked ? 'Play reply' : 'Play reply again'}
@@ -543,22 +608,38 @@ Use simple English and speak as if you are talking to a friend. When you're read
           </section>
 
           <section className="tw-voice-card">
-            <div className="tw-voice-followup-head">
-              <h3 className="tw-voice-card-title">AI Follow-up Questions</h3>
-              <span className="tw-voice-followup-badge">• Real-time</span>
-            </div>
-            <p className="tw-voice-current-q-label">Current Question:</p>
-            <div className="tw-voice-current-q-box">
-              <p className="tw-voice-current-q-text">
-                {lastAssistantMessage || (topic ? `Let's practice ${topic}. When you're ready, click Start and tell me what you'd like to work on.` : "When you're ready, click Start and tell me what you would like to practice today.")}
-              </p>
-            </div>
-            <p className="tw-voice-upcoming-title">Upcoming Topics:</p>
-            <ul className="tw-voice-upcoming-list">
-              {upcomingPlaceholders.map((text, i) => (
-                <li key={i}>{text}</li>
-              ))}
-            </ul>
+            {soloMode ? (
+              <>
+                <h3 className="tw-voice-card-title">Topic & notes</h3>
+                <div className="tw-voice-current-q-box">
+                  <p className="tw-voice-current-q-text">
+                    {topicDescription ||
+                      (topic
+                        ? `Speak freely about: ${topic}. Focus on structure, clarity, and confidence.`
+                        : 'Speak freely on any topic.')}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="tw-voice-followup-head">
+                  <h3 className="tw-voice-card-title">AI Follow-up Questions</h3>
+                  <span className="tw-voice-followup-badge">• Real-time</span>
+                </div>
+                <p className="tw-voice-current-q-label">Current Question:</p>
+                <div className="tw-voice-current-q-box">
+                  <p className="tw-voice-current-q-text">
+                    {lastAssistantMessage || (topic ? `Let's practice ${topic}. When you're ready, click Start and tell me what you'd like to work on.` : "When you're ready, click Start and tell me what you would like to practice today.")}
+                  </p>
+                </div>
+                <p className="tw-voice-upcoming-title">Upcoming Topics:</p>
+                <ul className="tw-voice-upcoming-list">
+                  {upcomingPlaceholders.map((text, i) => (
+                    <li key={i}>{text}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className="tw-voice-transcript-area" style={{ marginTop: '1rem' }}>
               {transcriptLines.map((line, i) => (
                 <div

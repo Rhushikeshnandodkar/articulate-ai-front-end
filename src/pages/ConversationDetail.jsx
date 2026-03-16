@@ -1,6 +1,7 @@
 import '../styles/conversation-detail.css';
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { usePageNavbar } from '../contexts/PageNavbarContext';
 import { getConversation, rephraseText, grammarCheck } from '../services/api';
 import { Line } from 'react-chartjs-2';
 import {
@@ -73,6 +74,7 @@ export default function ConversationDetail() {
   };
 
   const closeModal = () => setModal(null);
+  const { setPageNavbar } = usePageNavbar();
 
   useEffect(() => {
     if (!modal) return;
@@ -80,6 +82,17 @@ export default function ConversationDetail() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [modal]);
+
+  useEffect(() => {
+    const title = conv?.topic || 'Conversation';
+    const backLink = (
+      <Link to="/dashboard" className="tw-detail-nav-back">
+        ← Back to dashboard
+      </Link>
+    );
+    setPageNavbar({ title, rightActions: backLink });
+    return () => setPageNavbar({});
+  }, [conv?.topic, setPageNavbar]);
 
   if (loading) {
     return (
@@ -113,17 +126,6 @@ export default function ConversationDetail() {
 
   return (
     <div className="tw-detail-page">
-      <header className="tw-detail-nav">
-        <div className="tw-detail-nav-left">
-          <h1 className="tw-detail-nav-title">{conv.topic}</h1>
-        </div>
-        <div className="tw-detail-nav-actions">
-          <Link to="/dashboard" className="tw-detail-nav-back">
-            ← Back to dashboard
-          </Link>
-        </div>
-      </header>
-
       <div className="tw-detail-main">
       {hasStats && (
         <section className="tw-detail-section">
