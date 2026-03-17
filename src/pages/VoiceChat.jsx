@@ -2,7 +2,7 @@ import '../styles/voice.css';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
-import { voiceChat, endConversation } from '../services/api';
+import { voiceChat, endConversation, getProfile, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -65,11 +65,20 @@ export default function VoiceChat() {
   const hasSpokenRef = useRef(false);
   const transcriptEndRef = useRef(null);
   const sessionStartRef = useRef(null);
+  const pendingSendRef = useRef(null);
   listeningRef.current = listening;
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [spokenTotalSeconds, setSpokenTotalSeconds] = useState(0);
   const [displaySeconds, setDisplaySeconds] = useState(0);
+
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const [upgradePlans, setUpgradePlans] = useState([]);
+  const [upgradeUser, setUpgradeUser] = useState(null);
+  const [upgradeSubmittingId, setUpgradeSubmittingId] = useState(null);
+  const [conversationEndedId, setConversationEndedId] = useState(null);
+  const isFreePlanRef = useRef(true);
+  const upgradePlansRef = useRef([]);
 
   // Wall-clock elapsed timer for normal AI sessions (kept as before).
   useEffect(() => {
@@ -81,6 +90,39 @@ export default function VoiceChat() {
     }, 1000);
     return () => clearInterval(t);
   }, [conversationId, soloMode]);
+
+  useEffect(() => {
+    const loadPlanStatus = async () => {
+      try {
+        const [profileData, plansData, userData] = await Promise.all([
+          getProfile().catch(() => null),
+          getPlans().catch(() => ({ plans: [] })),
+          getMe().catch(() => null),
+        ]);
+        const allPlans = Array.isArray(plansData?.plans) ? plansData.plans : [];
+        setUpgradePlans(allPlans);
+        upgradePlansRef.current = allPlans;
+        setUpgradeUser(userData);
+        const planId =
+          profileData?.subscription_plan && typeof profileData.subscription_plan === 'object'
+            ? profileData.subscription_plan.id
+            : profileData?.subscription_plan || null;
+        const plan = allPlans.find((p) => p.id === planId);
+        isFreePlanRef.current = !plan || plan.price === 0;
+        if (
+          conversationId &&
+          isFreePlanRef.current &&
+          allPlans.length > 0 &&
+          (profileData?.minutes_remaining ?? 0) <= 0
+        ) {
+          setShowUpgradePopup(true);
+        }
+      } catch (_) {
+        isFreePlanRef.current = true;
+      }
+    };
+    loadPlanStatus();
+  }, [conversationId]);
 
   // In solo mode, drive the visible timer from total spoken time + live mic time.
   useEffect(() => {
@@ -182,54 +224,72 @@ export default function VoiceChat() {
     const isAudio = audioBlobOrText instanceof Blob;
     setStatus('sending');
     setError(null);
-    try {
-      const { blob, text: aiText } = isAudio
-        ? await voiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode })
-        : await voiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode });
-      let url = null;
-      if (!soloMode && blob) {
-        url = URL.createObjectURL(blob);
-        setPendingPlayUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
-      } else {
-        // Text-only reply (builder plan) or solo mode – clear any pending audio.
-        setPendingPlayUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return null;
-        });
-      }
-      const userDisplay = isAudio ? '(your speech)' : audioBlobOrText;
-      setTranscriptLines((prev) => [
-        ...prev,
-        { role: 'user', content: userDisplay },
-        ...(!soloMode ? [{ role: 'assistant', content: aiText || '(reply)' }] : []),
-      ]);
+    const promise = (async () => {
+      try {
+        const { blob, text: aiText } = isAudio
+          ? await voiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode })
+          : await voiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds, solo: soloMode });
+        let url = null;
+        if (!soloMode && blob) {
+          url = URL.createObjectURL(blob);
+          setPendingPlayUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+        } else {
+          setPendingPlayUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+        }
+        const userDisplay = isAudio ? '(your speech)' : audioBlobOrText;
+        setTranscriptLines((prev) => [
+          ...prev,
+          { role: 'user', content: userDisplay },
+          ...(!soloMode ? [{ role: 'assistant', content: aiText || '(reply)' }] : []),
+        ]);
 
-      if (soloMode && spokenDurationSeconds > 0) {
-        setSpokenTotalSeconds((prev) => {
-          const next = prev + spokenDurationSeconds;
-          if (conversationId && next >= timeLimitSeconds) {
-            endConversation(conversationId)
-              .then(() => {
-                navigate(`/conversations/${conversationId}`, { replace: true });
-              })
-              .catch(() => {});
-          }
-          return next;
-        });
-      }
+        if (soloMode && spokenDurationSeconds > 0) {
+          setSpokenTotalSeconds((prev) => {
+            const next = prev + spokenDurationSeconds;
+            if (conversationId && next >= timeLimitSeconds) {
+              endConversation(conversationId)
+                .then(() => {
+                  if (isFreePlanRef.current && upgradePlansRef.current.length > 0) {
+                    setConversationEndedId(conversationId);
+                    setShowUpgradePopup(true);
+                  } else {
+                    navigate(`/conversations/${conversationId}`, { replace: true });
+                  }
+                })
+                .catch(() => {});
+            }
+            return next;
+          });
+        }
 
-      hasSpokenRef.current = true;
-      setStatus('idle');
-      if (url) {
-        playAudio(url);
+        hasSpokenRef.current = true;
+        setStatus('idle');
+        if (url) {
+          playAudio(url);
+        }
+      } catch (err) {
+        const errMsg = err?.error || err?.message || String(err);
+        setError(errMsg);
+        setStatus('error');
+        if (
+          typeof errMsg === 'string' &&
+          (errMsg.includes('practice minutes') || errMsg.includes('monthly limit')) &&
+          upgradePlansRef.current.length > 0
+        ) {
+          setShowUpgradePopup(true);
+        }
+      } finally {
+        pendingSendRef.current = null;
       }
-    } catch (err) {
-      setError(err?.error || err?.message || String(err));
-      setStatus('error');
-    }
+    })();
+    pendingSendRef.current = promise;
+    return promise;
   }, [playAudio, conversationId, soloMode, navigate, timeLimitSeconds]);
 
   useEffect(() => {
@@ -445,12 +505,47 @@ When you're ready, click Start and answer in your own words.`;
     if (!conversationId) return;
     setEnding(true);
     setEndedByUser(true);
+
+    // If the mic is still on, stop recording so the last speech gets processed.
+    if (listeningRef.current) {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        const startedAt = turnStartRef.current;
+        const now = performance.now();
+        const spokenDuration =
+          typeof startedAt === 'number' ? Math.max(0.2, (now - startedAt) / 1000) : 0;
+        turnStartRef.current = null;
+        recorder._spokenDurationSeconds = spokenDuration;
+        sentByPauseRef.current = true;
+        recorder.stop();
+      }
+      try { recognitionRef.current?.abort(); } catch (_) {}
+      setListening(false);
+      setDisplayTranscript('');
+    }
+
+    // Wait for any in-flight sendToBackend to finish before ending the conversation.
+    if (pendingSendRef.current) {
+      try { await pendingSendRef.current; } catch (_) {}
+    }
+
+    // Small extra wait to let recorder.onstop fire and trigger a new send if needed.
+    await new Promise((r) => setTimeout(r, 300));
+    if (pendingSendRef.current) {
+      try { await pendingSendRef.current; } catch (_) {}
+    }
+
     try {
       await endConversation(conversationId);
-      navigate(`/conversations/${conversationId}`, { replace: true });
+      if (isFreePlanRef.current && upgradePlansRef.current.length > 0) {
+        setConversationEndedId(conversationId);
+        setShowUpgradePopup(true);
+        setEnding(false);
+      } else {
+        navigate(`/conversations/${conversationId}`, { replace: true });
+      }
     } catch (err) {
       setError(err?.error || err?.message || 'Failed to end conversation.');
-    } finally {
       setEnding(false);
     }
   };
@@ -478,6 +573,7 @@ When you're ready, click Start and answer in your own words.`;
   }, [conversationId, navigate]);
 
   const { setPageNavbar } = usePageNavbar();
+  const isProcessing = status === 'sending';
   useEffect(() => {
     const title = soloMode ? 'Solo Speaking Practice' : 'AI Communication Practice';
     const endBtn = conversationId ? (
@@ -487,7 +583,7 @@ When you're ready, click Start and answer in your own words.`;
         onClick={requestEndSession}
         disabled={ending}
       >
-        {ending ? 'Ending…' : 'End Session'}
+        {ending ? 'Processing & ending…' : 'End Session'}
       </button>
     ) : null;
     setPageNavbar({ title, rightActions: endBtn });
@@ -532,7 +628,7 @@ When you're ready, click Start and answer in your own words.`;
             </div>
           </div>
 
-          <div className="tw-voice-stat-card">
+          <div className="tw-voice-stat-card tw-voice-stat-card--topic">
             <p className="tw-voice-stat-label">Current Topic</p>
             <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
             <p className="tw-voice-stat-desc">
@@ -607,7 +703,7 @@ When you're ready, click Start and answer in your own words.`;
             )}
           </section>
 
-          <section className="tw-voice-card">
+          <section className="tw-voice-card tw-voice-card--scrollable">
             {soloMode ? (
               <>
                 <h3 className="tw-voice-card-title">Topic & notes</h3>
@@ -666,7 +762,9 @@ When you're ready, click Start and answer in your own words.`;
           <div className="tw-voice-leave-modal">
             <h2 className="tw-voice-leave-title">End session?</h2>
             <p className="tw-voice-leave-text">
-              If you end now, we&apos;ll save your progress and generate a report for this practice session.
+              {ending
+                ? 'Saving your speech and generating report…'
+                : 'If you end now, we\'ll save your progress and generate a report for this practice session.'}
             </p>
             <div className="tw-voice-leave-actions">
               <button
@@ -683,9 +781,106 @@ When you're ready, click Start and answer in your own words.`;
                 onClick={handleEndConversation}
                 disabled={ending}
               >
-                {ending ? 'Ending…' : 'End session'}
+                {ending ? 'Processing & ending…' : 'End session'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showUpgradePopup && (
+        <div
+          className="tw-voice-leave-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => {
+            setShowUpgradePopup(false);
+            if (conversationEndedId) {
+              navigate(`/conversations/${conversationEndedId}`, { replace: true });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
+          }}
+        >
+          <div className="tw-voice-upgrade-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tw-voice-upgrade-header">
+              <h2 className="tw-voice-upgrade-title">Great session! Ready to level up?</h2>
+              <button
+                type="button"
+                className="tw-voice-upgrade-close"
+                onClick={() => {
+                  setShowUpgradePopup(false);
+                  if (conversationEndedId) {
+                    navigate(`/conversations/${conversationEndedId}`, { replace: true });
+                  } else {
+                    navigate('/dashboard', { replace: true });
+                  }
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="tw-voice-upgrade-desc">
+              You're on the Free plan with limited practice minutes. Upgrade to get more practice time, AI-powered feedback, and premium features.
+            </p>
+            <div className="tw-voice-upgrade-plans">
+              {upgradePlans.filter((p) => p.price > 0).map((plan) => (
+                <div key={plan.id} className="tw-voice-upgrade-plan-card">
+                  <h3 className="tw-voice-upgrade-plan-name">{plan.name}</h3>
+                  <p className="tw-voice-upgrade-plan-price">
+                    ₹{plan.price.toFixed(2)} <span>/ {plan.duration} days</span>
+                  </p>
+                  {plan.description && (
+                    <div
+                      className="tw-voice-upgrade-plan-desc"
+                      dangerouslySetInnerHTML={{ __html: plan.description }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="tw-btn-primary tw-voice-upgrade-plan-btn"
+                    disabled={upgradeSubmittingId === plan.id}
+                    onClick={() => {
+                      setUpgradeSubmittingId(plan.id);
+                      subscribeToPlanWithPayment(
+                        plan.id,
+                        plan,
+                        upgradeUser,
+                        () => {
+                          setUpgradeSubmittingId(null);
+                          setShowUpgradePopup(false);
+                          if (conversationEndedId) {
+                            navigate(`/conversations/${conversationEndedId}`, { replace: true });
+                          } else {
+                            navigate('/dashboard', { replace: true });
+                          }
+                        },
+                        (err) => {
+                          setUpgradeSubmittingId(null);
+                          if (err?.error === 'Payment cancelled') return;
+                        },
+                      );
+                    }}
+                  >
+                    {upgradeSubmittingId === plan.id ? 'Processing…' : `Get ${plan.name}`}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="tw-voice-upgrade-skip"
+              onClick={() => {
+                setShowUpgradePopup(false);
+                if (conversationEndedId) {
+                  navigate(`/conversations/${conversationEndedId}`, { replace: true });
+                } else {
+                  navigate('/dashboard', { replace: true });
+                }
+              }}
+            >
+              Skip for now — View session report
+            </button>
           </div>
         </div>
       )}

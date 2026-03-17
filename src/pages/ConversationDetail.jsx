@@ -2,6 +2,7 @@ import '../styles/conversation-detail.css';
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { getConversation, rephraseText, grammarCheck } from '../services/api';
 import { Line } from 'react-chartjs-2';
 import {
@@ -32,6 +33,7 @@ function CloseIcon() {
 
 export default function ConversationDetail() {
   const { id } = useParams();
+  const { theme } = useTheme();
   const [conv, setConv] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -201,7 +203,7 @@ export default function ConversationDetail() {
                           {
                             label: 'Words per minute',
                             data: [targetPace, Math.round(userPace)],
-                            borderColor: 'rgba(156, 163, 175, 0.4)',
+                            borderColor: theme === 'light' ? 'rgba(100, 116, 139, 0.5)' : 'rgba(156, 163, 175, 0.4)',
                             backgroundColor: ['#22C55E', '#EF4444'],
                             pointBackgroundColor: ['#22C55E', '#EF4444'],
                             pointBorderColor: ['#22C55E', '#EF4444'],
@@ -225,12 +227,20 @@ export default function ConversationDetail() {
                         scales: {
                           x: {
                             grid: { display: false },
-                            ticks: { color: '#9CA3AF', font: { size: 11 } },
+                            ticks: {
+                              color: theme === 'light' ? '#64748B' : '#9CA3AF',
+                              font: { size: 11 },
+                            },
                           },
                           y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
-                            ticks: { color: '#6B7280', font: { size: 10 } },
+                            grid: {
+                              color: theme === 'light' ? 'rgba(100, 116, 139, 0.2)' : 'rgba(148, 163, 184, 0.25)',
+                            },
+                            ticks: {
+                              color: theme === 'light' ? '#64748B' : '#6B7280',
+                              font: { size: 10 },
+                            },
                           },
                         },
                       }}

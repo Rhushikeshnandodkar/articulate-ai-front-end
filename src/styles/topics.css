@@ -15,8 +15,12 @@
   margin-bottom: 1.75rem;
   padding: 1.25rem 1.5rem;
   background: var(--bg-card);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  border: none;
+}
+
+[data-theme="light"] .tw-topics-filters-bar {
+  background: #FFFFFF;
 }
 
 .tw-topics-search-wrap {
@@ -43,12 +47,12 @@
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.75rem;
   font-size: 0.9375rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-app);
+  border: none;
+  border-radius: 8px;
+  background: var(--input-bg);
   color: var(--text);
   font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: box-shadow 0.2s;
 }
 
 .tw-topics-search-input::placeholder {
@@ -57,8 +61,11 @@
 
 .tw-topics-search-input:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(167, 237, 2, 0.15);
+  box-shadow: 0 0 0 3px rgba(167, 237, 2, 0.2);
+}
+
+[data-theme="light"] .tw-topics-search-input:focus {
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.25);
 }
 
 .tw-topics-filter-pills {
@@ -81,9 +88,9 @@
   padding: 0.625rem 2.5rem 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background-color: var(--bg-app);
+  border: none;
+  border-radius: 8px;
+  background-color: var(--input-bg);
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
@@ -97,13 +104,20 @@
 }
 
 .tw-topics-filter-select:hover {
-  border-color: rgba(167, 237, 2, 0.4);
   background-color: rgba(167, 237, 2, 0.06);
+}
+
+[data-theme="light"] .tw-topics-filter-select:hover {
+  background-color: rgba(5, 150, 105, 0.08);
 }
 
 .tw-topics-filter-select:focus {
   outline: none;
-  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(167, 237, 2, 0.3);
+}
+
+[data-theme="light"] .tw-topics-filter-select:focus {
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.35);
 }
 
 .tw-topics-filter-select option {
@@ -126,18 +140,18 @@
   letter-spacing: -0.03em;
 }
 
-[data-theme="dark"] .tw-topics-section-title {
-  color: #fff;
-}
-
 .tw-topics-count-badge {
   font-size: 0.8125rem;
   font-weight: 700;
   padding: 0.4rem 0.9rem;
   border-radius: 9999px;
-  background: rgba(167, 237, 2, 0.15);
+  background: rgba(167, 237, 2, 0.2);
   color: var(--accent);
-  border: 1px solid rgba(167, 237, 2, 0.3);
+  border: none;
+}
+
+[data-theme="light"] .tw-topics-count-badge {
+  background: rgba(5, 150, 105, 0.18);
 }
 
 /* Grid - exactly 3 cards per row */
@@ -160,22 +174,18 @@
   }
 }
 
-/* Topic cards - glassy effect */
+/* Topic cards */
 .tw-topics-card {
   display: flex;
   flex-direction: column;
-  background: rgba(44, 44, 44, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
   padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  border: none;
 }
 
 [data-theme="light"] .tw-topics-card {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(0, 0, 0, 0.08);
+  background: #FFFFFF;
 }
 
 .tw-topics-card-head {
@@ -200,8 +210,14 @@
   letter-spacing: 0.06em;
   padding: 0.2rem 0.45rem;
   border-radius: 4px;
-  background: rgba(167, 237, 2, 0.2);
-  color: #A7ED02;
+  background: rgba(167, 237, 2, 0.25);
+  color: var(--accent);
+  border: none;
+}
+
+[data-theme="light"] .tw-topics-card-new {
+  background: rgba(5, 150, 105, 0.2);
+  color: var(--accent);
 }
 
 .tw-topics-card-tag {
@@ -229,6 +245,21 @@
   color: #6ee7b7;
 }
 
+[data-theme="light"] .tw-topics-card-tag--blue {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+}
+
+[data-theme="light"] .tw-topics-card-tag--purple {
+  background: rgba(124, 58, 237, 0.15);
+  color: #5b21b6;
+}
+
+[data-theme="light"] .tw-topics-card-tag--green {
+  background: rgba(5, 150, 105, 0.15);
+  color: #047857;
+}
+
 .tw-topics-card-title {
   font-size: 1.125rem;
   font-weight: 600;
@@ -237,10 +268,7 @@
   line-height: 1.35;
   flex: 1;
   min-width: 0;
-}
-
-[data-theme="dark"] .tw-topics-card-title {
-  color: #fff;
+  letter-spacing: -0.01em;
 }
 
 .tw-topics-card-desc {
@@ -277,7 +305,7 @@
 }
 
 .tw-topics-card-status--done {
-  color: #A7ED02;
+  color: var(--accent);
 }
 
 .tw-topics-card-status--pending {
@@ -302,7 +330,7 @@
 }
 
 .tw-topics-card-btn:not(:disabled):hover {
-  background: #b8f235;
+  filter: brightness(1.08);
 }
 
 .tw-topics-card-btn:disabled {
@@ -316,8 +344,12 @@
   text-align: center;
   padding: 4rem 2rem;
   background: var(--bg-card);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  border: none;
+}
+
+[data-theme="light"] .tw-topics-empty {
+  background: #FFFFFF;
 }
 
 .tw-topics-empty-icon {
@@ -330,6 +362,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+[data-theme="light"] .tw-topics-empty-icon {
+  background: rgba(5, 150, 105, 0.12);
 }
 
 .tw-topics-empty-icon svg {

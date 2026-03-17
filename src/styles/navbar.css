@@ -8,12 +8,13 @@
   z-index: 10;
   flex-shrink: 0;
   height: 80px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--bg-app);
+  border-bottom: none;
+  background: var(--bg-card);
 }
 
 [data-theme="light"] .tw-page-navbar {
-  border-bottom-color: var(--border);
+  background: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .tw-page-navbar-inner {
@@ -33,13 +34,10 @@
 
 .tw-page-navbar-title {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
-}
-
-[data-theme="dark"] .tw-page-navbar-title {
-  color: #fff;
+  letter-spacing: -0.02em;
 }
 
 .tw-page-navbar-right {
@@ -61,46 +59,37 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  color: var(--text-dim);
+  background: var(--input-bg);
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .tw-page-navbar-theme-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-[data-theme="light"] .tw-page-navbar-theme-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 .tw-page-navbar-logout-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 8px 12px;
-  font-size: 0.875rem;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  color: var(--text-dim);
+  background: var(--input-bg);
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
   font-family: inherit;
+  transition: background 0.15s, color 0.15s;
 }
 
 .tw-page-navbar-logout-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-
-[data-theme="light"] .tw-page-navbar-logout-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--hover-bg);
   color: var(--text);
 }
 

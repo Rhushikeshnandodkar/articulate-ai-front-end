@@ -1,13 +1,16 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { PageNavbarProvider } from '../contexts/PageNavbarContext';
 import PageNavbar from './PageNavbar';
+import { getProfile, getPlans } from '../services/api';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },
   { to: '/topics', label: 'Topics', Icon: TopicsIcon },
+  { to: '/conversations', label: 'Conversations', Icon: ReportsIcon },
   { to: '/profile', label: 'Settings', Icon: SettingsIcon },
 ];
 
@@ -100,6 +103,42 @@ export default function AppLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
+  const [planLabel, setPlanLabel] = useState('Free');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPlan = async () => {
+      try {
+        const profile = await getProfile();
+        if (!profile?.subscription_plan) {
+          if (isMounted) setPlanLabel('Free');
+          return;
+        }
+
+        const plansData = await getPlans().catch(() => null);
+        const plans = Array.isArray(plansData?.plans) ? plansData.plans : [];
+
+        const currentPlanId =
+          profile.subscription_plan && typeof profile.subscription_plan === 'object'
+            ? profile.subscription_plan.id
+            : profile.subscription_plan;
+        const currentPlan = plans.find((p) => p.id === currentPlanId);
+
+        if (isMounted) {
+          setPlanLabel(currentPlan?.name || 'Active');
+        }
+      } catch (_e) {
+        if (isMounted) setPlanLabel('Free');
+      }
+    };
+
+    loadPlan();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogout = () => {
     try {
@@ -121,11 +160,14 @@ export default function AppLayout() {
               </Link>
             </div>
             <nav className="tw-nav">
+              <span className="tw-sidebar-section-label">Menu</span>
               {navItems.map(({ to, label, Icon, badge }) => {
+                const { pathname } = location;
                 const isActive =
-                  (location.pathname === to && (to !== '/dashboard' || label === 'Dashboard')) ||
-                  (to === '/topics' && location.pathname === '/voice') ||
-                  (to === '/topics' && location.pathname.startsWith('/conversations'));
+                  (to === '/dashboard' && pathname.startsWith('/dashboard')) ||
+                  (to === '/topics' && (pathname === '/topics' || pathname === '/voice')) ||
+                  (to === '/conversations' && pathname.startsWith('/conversations')) ||
+                  (to === '/profile' && pathname.startsWith('/profile'));
                 return (
                   <Link
                     key={label}
@@ -140,10 +182,17 @@ export default function AppLayout() {
               })}
             </nav>
             <div className="tw-sidebar-footer">
-              <button type="button" className="tw-sidebar-upgrade">
-                <StarIcon className="tw-nav-icon" />
-                <span>Upgrade Pro</span>
-              </button>
+              {planLabel === 'Free' ? (
+                <button type="button" className="tw-sidebar-upgrade">
+                  <StarIcon className="tw-nav-icon" />
+                  <span>Upgrade Pro</span>
+                </button>
+              ) : (
+                <div className="tw-sidebar-upgrade tw-sidebar-upgrade--current">
+                  <StarIcon className="tw-nav-icon" />
+                  <span>{planLabel} Plan</span>
+                </div>
+              )}
               <button type="button" className="tw-sidebar-util" title="Help" aria-label="Help">
                 <HelpIcon className="tw-nav-icon" />
                 <span>Help</span>
@@ -157,7 +206,7 @@ export default function AppLayout() {
         </aside>
 
         <div className="tw-main-wrap">
-          <PageNavbar />
+          <PageNavbar planLabel={planLabel} />
           <main className="tw-main-content">
             <div className="tw-main-content-inner">
               <Outlet />

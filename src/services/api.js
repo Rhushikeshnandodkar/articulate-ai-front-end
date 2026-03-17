@@ -123,6 +123,110 @@ export async function subscribeToPlan(planId) {
   return data;
 }
 
+/** Create Razorpay order for a paid plan. Returns { order_id, amount, key_id, plan }. */
+export async function createRazorpayOrder(planId) {
+  const res = await fetch(`${API_BASE}/subscription/create-order/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ plan_id: planId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
+/** Verify Razorpay payment and activate subscription. */
+export async function verifyRazorpayPayment({ razorpay_payment_id, razorpay_order_id, razorpay_signature, plan_id }) {
+  const res = await fetch(`${API_BASE}/subscription/verify-payment/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
+      plan_id: Number(plan_id),
+    }),
+  });
+  const data = await res.json().catch(() => ({ error: 'Invalid response from server' }));
+  if (!res.ok) throw data;
+  return data;
+}
+
+/**
+ * Subscribe to a plan: free plans use direct subscribe; paid plans open Razorpay checkout.
+ * Tries create-order first; falls back to subscribe only when backend says plan is free.
+ * @param {number} planId - Plan ID
+ * @param {object} plan - Plan object with name, price
+ * @param {object} user - User object with first_name, last_name, email (for prefill)
+ * @param {function} onSuccess - Called with response data on success
+ * @param {function} onError - Called with error object on failure
+ */
+export function subscribeToPlanWithPayment(planId, plan, user, onSuccess, onError) {
+  const price = Number(plan?.price);
+  const isFree = !Number.isNaN(price) && price <= 0;
+
+  if (isFree) {
+    subscribeToPlan(planId)
+      .then(onSuccess)
+      .catch(onError);
+    return;
+  }
+
+  createRazorpayOrder(planId)
+    .then((result) => {
+      const { order_id, amount, key_id, plan: planData } = result;
+      const u = user || {};
+      const userName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || '';
+      const options = {
+        key: key_id,
+        amount: amount,
+        currency: 'INR',
+        name: 'Articulate AI',
+        description: `Subscription: ${planData?.name || plan?.name || 'Plan'}`,
+        order_id,
+        prefill: {
+          name: userName,
+          email: u.email || '',
+        },
+        handler: async (response) => {
+          try {
+            const data = await verifyRazorpayPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              plan_id: planId,
+            });
+            await onSuccess(data);
+          } catch (err) {
+            onError(err);
+          }
+        },
+        modal: {
+          ondismiss: () => onError({ error: 'Payment cancelled' }),
+        },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        onError({ error: response.error?.description || 'Payment failed' });
+      });
+      rzp.open();
+    })
+    .catch((err) => {
+      const msg = String(err?.error || err?.detail || '');
+      if (msg.includes('do not require payment') || msg.includes('Free plans')) {
+        subscribeToPlan(planId).then(onSuccess).catch(onError);
+        return;
+      }
+      onError(err);
+    });
+}
+
 const ARTICULATE_BASE = `${API_ORIGIN}/api/articulate`;
 
 /**
@@ -244,14 +348,16 @@ export async function getConversations() {
   return data;
 }
 
-export async function createConversation(topic) {
+export async function createConversation(topic, topicId = null) {
+  const body = { topic: (typeof topic === 'string' ? topic : topic?.title || '').trim() };
+  if (topicId != null) body.topic_id = topicId;
   const res = await fetch(`${ARTICULATE_BASE}/conversations/create/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
     },
-    body: JSON.stringify({ topic: topic.trim() }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw data;

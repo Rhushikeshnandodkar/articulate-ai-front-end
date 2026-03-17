@@ -22,8 +22,6 @@ export default function Login() {
         const profile = await getProfile();
         if (!profile.has_completed_profile) {
           navigate('/profile-setup', { replace: true });
-        } else if (!profile.subscription_plan) {
-          navigate('/subscriptions', { replace: true });
         } else {
           navigate('/dashboard', { replace: true });
         }

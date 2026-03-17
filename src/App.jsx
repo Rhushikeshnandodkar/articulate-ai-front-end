@@ -10,6 +10,7 @@ import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
 import Subscriptions from './pages/Subscriptions';
 import Dashboard from './pages/Dashboard';
+import Conversations from './pages/Conversations';
 import Profile from './pages/Profile';
 import ProfileSetup from './pages/ProfileSetup';
 import VoiceChat from './pages/VoiceChat';
@@ -45,6 +46,7 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="topics" element={<Topics />} />
+          <Route path="conversations" element={<Conversations />} />
           <Route path="profile" element={<Profile />} />
           <Route path="voice" element={<VoiceChat />} />
           <Route path="conversations/:id" element={<ConversationDetail />} />

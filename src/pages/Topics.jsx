@@ -1,8 +1,9 @@
 import '../styles/topics.css';
+import '../styles/voice.css';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getTopics, createConversation } from '../services/api';
+import { getTopics, createConversation, getProfile, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
 
 function SearchIcon() {
@@ -44,6 +45,11 @@ export default function Topics() {
   const [category, setCategory] = useState('all');
   const [startingId, setStartingId] = useState(null);
   const [attemptFilter, setAttemptFilter] = useState('all');
+  const [profile, setProfile] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [showQuotaExceededModal, setShowQuotaExceededModal] = useState(false);
+  const [upgradeUser, setUpgradeUser] = useState(null);
+  const [upgradeSubmittingId, setUpgradeSubmittingId] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -71,6 +77,20 @@ export default function Topics() {
     };
   }, [isAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getProfile().then(setProfile).catch(() => {});
+    getPlans().then((data) => setPlans(Array.isArray(data?.plans) ? data.plans : [])).catch(() => {});
+    getMe().then(setUpgradeUser).catch(() => {});
+  }, [isAuthenticated]);
+
+  const minutesRemaining = profile?.minutes_remaining ?? Math.max(0, (profile?.minutes_limit ?? 10) - (profile?.monthly_minutes_used ?? 0));
+  const currentPlanId = profile?.subscription_plan && typeof profile.subscription_plan === 'object'
+    ? profile.subscription_plan.id
+    : profile?.subscription_plan || null;
+  const currentPlan = plans.find((p) => p.id === currentPlanId);
+  const isFreePlan = !currentPlan || currentPlan.price === 0;
+
   const categories = useMemo(() => {
     const set = new Set();
     topics.forEach((t) => {
@@ -80,8 +100,9 @@ export default function Topics() {
   }, [topics]);
 
   const filtered = useMemo(() => {
+    const limited = isFreePlan ? topics.slice(0, 5) : topics;
     const query = search.trim().toLowerCase();
-    return topics.filter((t) => {
+    return limited.filter((t) => {
       if (level !== 'all' && t.level !== level) return false;
       if (category !== 'all' && t.category !== category) return false;
       if (attemptFilter === 'attempted' && !t.completed) return false;
@@ -90,14 +111,18 @@ export default function Topics() {
       const haystack = `${t.title} ${t.category ?? ''} ${t.description ?? ''}`.toLowerCase();
       return haystack.includes(query);
     });
-  }, [topics, search, level, category, attemptFilter]);
+  }, [topics, search, level, category, attemptFilter, isFreePlan]);
 
   const handleStart = async (topicObj) => {
     if (!topicObj?.title) return;
+    if (isFreePlan && minutesRemaining <= 0) {
+      setShowQuotaExceededModal(true);
+      return;
+    }
     setError(null);
     setStartingId(topicObj.id);
     try {
-      const conv = await createConversation(topicObj.title);
+      const conv = await createConversation(topicObj.title, topicObj.id);
       const timeLimitSeconds = topicObj.time_limit_seconds || 180;
       navigate(`/voice?conversation=${conv.id}&solo=1`, {
         state: {
@@ -109,7 +134,11 @@ export default function Topics() {
         },
       });
     } catch (err) {
-      setError(err?.error || err?.message || 'Failed to start session.');
+      const errMsg = err?.error || err?.message || 'Failed to start session.';
+      setError(errMsg);
+      if (typeof errMsg === 'string' && (errMsg.includes('practice minutes') || errMsg.includes('monthly limit'))) {
+        setShowQuotaExceededModal(true);
+      }
     } finally {
       setStartingId(null);
     }
@@ -183,7 +212,9 @@ export default function Topics() {
       <div className="tw-topics-section-head">
         <h2 className="tw-topics-section-title">Choose your challenge</h2>
         <span className="tw-topics-count-badge">
-          {filtered.length} of {topics.length} challenges
+          {isFreePlan
+            ? `${filtered.length} of 5 topics (upgrade for all ${topics.length})`
+            : `${filtered.length} of ${topics.length} challenges`}
         </span>
       </div>
 
@@ -251,6 +282,78 @@ export default function Topics() {
               </article>
             );
           })}
+        </div>
+      )}
+
+      {showQuotaExceededModal && (
+        <div
+          className="tw-voice-leave-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowQuotaExceededModal(false)}
+        >
+          <div className="tw-voice-upgrade-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tw-voice-upgrade-header">
+              <h2 className="tw-voice-upgrade-title">Monthly practice limit reached</h2>
+              <button
+                type="button"
+                className="tw-voice-upgrade-close"
+                onClick={() => setShowQuotaExceededModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="tw-voice-upgrade-desc">
+              You&apos;ve used all your free minutes this month. Upgrade to get more practice time and premium features.
+            </p>
+            <div className="tw-voice-upgrade-plans">
+              {plans.filter((p) => p.price > 0).map((plan) => (
+                <div key={plan.id} className="tw-voice-upgrade-plan-card">
+                  <h3 className="tw-voice-upgrade-plan-name">{plan.name}</h3>
+                  <p className="tw-voice-upgrade-plan-price">
+                    ₹{plan.price.toFixed(2)} <span>/ {plan.duration} days</span>
+                  </p>
+                  {plan.description && (
+                    <div
+                      className="tw-voice-upgrade-plan-desc"
+                      dangerouslySetInnerHTML={{ __html: plan.description }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="tw-btn-primary tw-voice-upgrade-plan-btn"
+                    disabled={upgradeSubmittingId === plan.id}
+                    onClick={() => {
+                      setUpgradeSubmittingId(plan.id);
+                      subscribeToPlanWithPayment(
+                        plan.id,
+                        plan,
+                        upgradeUser,
+                        () => {
+                          setUpgradeSubmittingId(null);
+                          setShowQuotaExceededModal(false);
+                          getProfile().then(setProfile).catch(() => {});
+                        },
+                        (err) => {
+                          setUpgradeSubmittingId(null);
+                          if (err?.error === 'Payment cancelled') return;
+                        },
+                      );
+                    }}
+                  >
+                    {upgradeSubmittingId === plan.id ? 'Processing…' : `Get ${plan.name}`}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="tw-voice-upgrade-skip"
+              onClick={() => setShowQuotaExceededModal(false)}
+            >
+              Maybe later
+            </button>
+          </div>
         </div>
       )}
     </div>

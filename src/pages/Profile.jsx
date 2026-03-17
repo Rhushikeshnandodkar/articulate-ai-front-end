@@ -2,7 +2,7 @@ import '../styles/profile.css';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
-import { getProfile, updateProfile, getConversations, getPlans, subscribeToPlan } from '../services/api';
+import { getProfile, updateProfile, getConversations, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
 
 const PROFESSION_OPTIONS = [
   { value: 'student', label: 'Student' },
@@ -60,6 +60,7 @@ export default function Profile() {
   const [plansLoading, setPlansLoading] = useState(true);
   const [planSubmittingId, setPlanSubmittingId] = useState(null);
   const [planError, setPlanError] = useState(null);
+  const [user, setUser] = useState(null);
   const [form, setForm] = useState({
     profession: 'student',
     goal: 'interview',
@@ -126,6 +127,10 @@ export default function Profile() {
       .finally(() => setPlansLoading(false));
   }, []);
 
+  useEffect(() => {
+    getMe().then(setUser).catch(() => setUser(null));
+  }, []);
+
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError(null);
@@ -133,6 +138,11 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const interests = (form.interests_text || '').trim();
+    if (!interests) {
+      setError('Please add your interests. The more interests you add, the better we can personalize your practice topics.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -142,9 +152,8 @@ export default function Profile() {
       setProfile(updated);
       setProfileCompleted(Boolean(updated.has_completed_profile));
       setModalOpen(false);
-      // If profile just became complete for the first time, go to subscriptions
       if (!wasCompleted && updated.has_completed_profile) {
-        navigate('/subscriptions', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       setError(err?.error || err?.message || 'Failed to save profile.');
@@ -160,18 +169,36 @@ export default function Profile() {
     return value || '—';
   };
 
-  const handlePlanSelect = async (planId) => {
+  const handlePlanSelect = (planId) => {
     setPlanError(null);
     setPlanSubmittingId(planId);
-    try {
-      await subscribeToPlan(planId);
-      const updated = await getProfile();
-      setProfile(updated);
-    } catch (err) {
-      setPlanError(err?.error || err?.detail || 'Failed to update plan. Please try again.');
-    } finally {
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) {
       setPlanSubmittingId(null);
+      return;
     }
+    subscribeToPlanWithPayment(
+      planId,
+      plan,
+      user,
+      async (data) => {
+        setPlanSubmittingId(null);
+        setPlanError(null);
+        try {
+          const updated = await getProfile();
+          setProfile(updated);
+        } catch (e) {
+          setPlanError(e?.error || e?.detail || e?.message || 'Plan updated but failed to refresh. Please reload.');
+        }
+      },
+      (err) => {
+        setPlanSubmittingId(null);
+        if (err?.error !== 'Payment cancelled') {
+          const msg = err?.error || err?.detail || err?.message || (typeof err === 'string' ? err : '');
+          setPlanError(msg || 'Failed to update plan. Please try again.');
+        }
+      }
+    );
   };
 
   if (loading) {
@@ -277,13 +304,26 @@ export default function Profile() {
           <>
             <p className="tw-profile-plan-current-line">
               Current plan:{' '}
-              <strong>{currentPlan ? currentPlan.name : profile?.subscription_plan ? 'Active plan' : 'None'}</strong>
+              <strong>{currentPlan ? currentPlan.name : profile?.subscription_plan ? 'Active plan' : 'Free'}</strong>
+              {profile?.subscription_active && profile?.subscription_expiry && (
+                <span style={{ fontWeight: 400, marginLeft: 8, fontSize: '0.85em', opacity: 0.7 }}>
+                  (expires {new Date(profile.subscription_expiry).toLocaleDateString()})
+                </span>
+              )}
+              {profile?.subscription_plan && !profile?.subscription_active && (
+                <span style={{ fontWeight: 400, marginLeft: 8, fontSize: '0.85em', color: 'var(--color-danger, #e74c3c)' }}>
+                  — Expired, please renew
+                </span>
+              )}
             </p>
             {planError && <p className="tw-error">{planError}</p>}
             <div className="tw-profile-plans-grid">
               {plans.map((plan) => {
                 const isCurrent = currentPlanId === plan.id;
                 const isSubmitting = planSubmittingId === plan.id;
+                const isFreePlan = plan.price === 0;
+                const isOnPaidPlan = currentPlan && currentPlan.price > 0;
+                const hideSwitchToFree = isFreePlan && isOnPaidPlan;
                 return (
                   <div
                     key={plan.id}
@@ -306,14 +346,21 @@ export default function Profile() {
                         Includes <strong>{plan.limit_minutes}</strong> minutes of practice per month
                       </p>
                     )}
-                    <button
-                      type="button"
-                      className="tw-profile-plan-btn"
-                      onClick={() => !isCurrent && handlePlanSelect(plan.id)}
-                      disabled={isCurrent || isSubmitting}
-                    >
-                      {isCurrent ? 'Current plan' : isSubmitting ? 'Updating…' : 'Switch to this plan'}
-                    </button>
+                    {!hideSwitchToFree && (
+                      <button
+                        type="button"
+                        className="tw-profile-plan-btn"
+                        onClick={() => !isCurrent && handlePlanSelect(plan.id)}
+                        disabled={isCurrent || isSubmitting}
+                      >
+                        {isCurrent ? 'Current plan' : isSubmitting ? 'Updating…' : 'Switch to this plan'}
+                      </button>
+                    )}
+                    {hideSwitchToFree && (
+                      <p className="tw-profile-plan-meta tw-profile-plan-no-downgrade">
+                        Your plan will auto-expire after the billing period.
+                      </p>
+                    )}
                   </div>
                 );
               })}
@@ -353,8 +400,9 @@ export default function Profile() {
                 ))}
               </select>
 
-              <label className="tw-modal-label">Interests (comma-separated)</label>
-              <input type="text" name="interests_text" value={form.interests_text} onChange={handleChange} className="tw-modal-field" placeholder="e.g. technology, interviews" />
+              <label className="tw-modal-label">Interests <span className="tw-required">(required)</span></label>
+              <p className="tw-modal-helper">Add as many interests as possible for personalized practice topics.</p>
+              <input type="text" name="interests_text" value={form.interests_text} onChange={handleChange} className="tw-modal-field" placeholder="e.g. cricket, music, coding, relationships" required />
 
               <label className="tw-modal-label">Bio (optional)</label>
               <textarea name="bio" value={form.bio} onChange={handleChange} className="tw-modal-field tw-modal-textarea" placeholder="What you'd like to improve…" rows={3} />

@@ -1,10 +1,11 @@
 import '../styles/dashboard.css';
+import '../styles/voice.css';
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchUser } from '../store/slices/authSlice';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
-import { getConversations, createConversation, getProfile, getSuggestedTopics, getDailyTopic } from '../services/api';
+import { getConversations, createConversation, getProfile, getSuggestedTopics, getDailyTopic, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
 
 const FALLBACK_TOPICS = [
   { title: 'Job interview', category: 'Career', description: 'Practice answering common interview questions.' },
@@ -120,6 +121,39 @@ function RefreshIcon() {
   );
 }
 
+function QuotaRing({ used, limit }) {
+  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  let color = '#22c55e';
+  if (pct >= 80) color = '#ef4444';
+  else if (pct >= 50) color = '#f59e0b';
+  return (
+    <div className="tw-quota-ring-wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--ring-track)" strokeWidth="8" />
+        <circle
+          cx="60" cy="60" r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          transform="rotate(-90 60 60)"
+          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+        />
+      </svg>
+      <div className="tw-quota-ring-text">
+        <span className="tw-quota-ring-value" style={{ color }}>{used}</span>
+        <span className="tw-quota-ring-of">of {limit} min</span>
+        <span className="tw-quota-ring-unit">used</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -137,6 +171,10 @@ export default function Dashboard() {
   const topicsScrollRef = useRef(null);
   const [topicsRefreshing, setTopicsRefreshing] = useState(false);
   const [dailyTopic, setDailyTopic] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [showQuotaExceededModal, setShowQuotaExceededModal] = useState(false);
+  const [upgradeUser, setUpgradeUser] = useState(null);
+  const [upgradeSubmittingId, setUpgradeSubmittingId] = useState(null);
 
   const scrollTopics = (direction) => {
     const el = topicsScrollRef.current;
@@ -181,6 +219,28 @@ export default function Dashboard() {
       });
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getPlans()
+      .then((data) => setPlans(Array.isArray(data.plans) ? data.plans : []))
+      .catch(() => {});
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getMe().then(setUpgradeUser).catch(() => {});
+  }, [isAuthenticated]);
+
+  const minutesUsed = profile?.monthly_minutes_used ?? 0;
+  const minutesLimit = profile?.minutes_limit ?? 10;
+  const minutesRemaining = profile?.minutes_remaining ?? Math.max(0, minutesLimit - minutesUsed);
+  const currentPlanId =
+    profile?.subscription_plan && typeof profile.subscription_plan === 'object'
+      ? profile.subscription_plan.id
+      : profile?.subscription_plan || null;
+  const currentPlan = plans.find((p) => p.id === currentPlanId);
+  const isFreePlan = !currentPlan || currentPlan.price === 0;
+
   const loadTopics = () => {
     if (!isAuthenticated) return;
     setTopicsLoading(true);
@@ -220,9 +280,16 @@ export default function Dashboard() {
       });
   };
 
-  // On first dashboard load after login, hydrate topics from localStorage if present.
+  // Load recommended topics only when profile is loaded and user has quota (not exceeded for free plan).
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !profileLoaded) return;
+    if (isFreePlan && minutesRemaining <= 0) {
+      setRecommendedTopics([]);
+      try {
+        localStorage.removeItem(TOPICS_STORAGE_KEY);
+      } catch (_) {}
+      return;
+    }
     try {
       const raw = localStorage.getItem(TOPICS_STORAGE_KEY);
       if (raw) {
@@ -233,10 +300,9 @@ export default function Dashboard() {
         }
       }
     } catch (_) {}
-    // If nothing stored, load once.
     loadTopics();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, profileLoaded, isFreePlan, minutesRemaining]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -260,6 +326,10 @@ export default function Dashboard() {
       setError('Enter or select a topic.');
       return;
     }
+    if (isFreePlan && minutesRemaining <= 0) {
+      setShowQuotaExceededModal(true);
+      return;
+    }
     setError(null);
     setStarting(true);
     try {
@@ -273,7 +343,11 @@ export default function Dashboard() {
         },
       });
     } catch (err) {
-      setError(err?.error || err?.message || 'Failed to start conversation.');
+      const errMsg = err?.error || err?.message || 'Failed to start conversation.';
+      setError(errMsg);
+      if (typeof errMsg === 'string' && (errMsg.includes('practice minutes') || errMsg.includes('monthly limit'))) {
+        setShowQuotaExceededModal(true);
+      }
     } finally {
       setStarting(false);
     }
@@ -317,9 +391,6 @@ export default function Dashboard() {
   const currentBadge = profile?.badge_level || 'none';
   const gameScore = profile?.game_score ?? 0;
   const latestConv = conversations.length > 0 ? conversations[0] : null;
-  const minutesUsed = profile?.monthly_minutes_used ?? 0;
-  const minutesLimit = profile?.minutes_limit ?? 10;
-  const minutesRemaining = profile?.minutes_remaining ?? Math.max(0, minutesLimit - minutesUsed);
   const streak = profile?.streak || {};
   const currentStreak = streak.current_streak ?? profile?.current_streak ?? 0;
   const longestStreak = streak.longest_streak ?? profile?.longest_streak ?? 0;
@@ -395,12 +466,23 @@ export default function Dashboard() {
     );
   }
 
+  const quotaExceeded = isFreePlan && minutesRemaining <= 0;
+
   return (
     <div className="tw-dashboard">
       <div className="tw-dashboard-grid">
         <section className="tw-dashboard-card">
           <h2 className="tw-dashboard-ready-title">Daily practice topic</h2>
-          {dailyTopic ? (
+          {quotaExceeded ? (
+            <>
+              <p className="tw-dashboard-ready-desc">
+                You&apos;ve used all your free minutes this month. Upgrade to continue practicing with daily topics and AI feedback.
+              </p>
+              <Link to="/profile" className="tw-btn-primary" style={{ textDecoration: 'none' }}>
+                Upgrade to continue
+              </Link>
+            </>
+          ) : dailyTopic ? (
             <>
               <p className="tw-dashboard-daily-topic-title">
                 {dailyTopic.title}
@@ -440,24 +522,51 @@ export default function Dashboard() {
         <section className="tw-dashboard-card tw-dashboard-badge-card">
           <h3 className="tw-dashboard-goal-title">Table Topic Badge</h3>
           <div className="tw-dashboard-badge-main">
-            {profile?.current_badge_icon ? (
-              <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
-                <img
-                  src={profile.current_badge_icon}
-                  alt={`${currentBadge} badge`}
-                  className="tw-dashboard-badge-img"
-                />
+            <div className="tw-dashboard-badge-ring-wrap">
+              {(() => {
+                const threshold = profile?.badge_progress?.next_threshold || 1;
+                const pct = Math.min(100, Math.round((gameScore / threshold) * 100));
+                const r = 34;
+                const circumference = 2 * Math.PI * r;
+                const offset = circumference - (pct / 100) * circumference;
+                return (
+                  <svg className="tw-dashboard-badge-ring-svg" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r={r} fill="none" stroke="var(--ring-track)" strokeWidth="5" />
+                    <circle
+                      cx="40" cy="40" r={r}
+                      fill="none"
+                      stroke="var(--accent)"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={offset}
+                      transform="rotate(-90 40 40)"
+                      style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                    />
+                  </svg>
+                );
+              })()}
+              <div className="tw-dashboard-badge-ring-inner">
+                {profile?.current_badge_icon ? (
+                  <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
+                    <img
+                      src={profile.current_badge_icon}
+                      alt={`${currentBadge} badge`}
+                      className="tw-dashboard-badge-img"
+                    />
+                  </div>
+                ) : (
+                  <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
+                    <span className="tw-dashboard-badge-symbol">
+                      {currentBadge === 'diamond' && '◆'}
+                      {currentBadge === 'gold' && '★'}
+                      {currentBadge === 'silver' && '☆'}
+                      {currentBadge === 'bronze' && '⬤'}
+                    </span>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
-                <span className="tw-dashboard-badge-symbol">
-                  {currentBadge === 'diamond' && '◆'}
-                  {currentBadge === 'gold' && '★'}
-                  {currentBadge === 'silver' && '☆'}
-                  {currentBadge === 'bronze' && '⬤'}
-                </span>
-              </div>
-            )}
+            </div>
             <div className="tw-dashboard-badge-text">
               <p className="tw-dashboard-badge-name">
                 {currentBadge.charAt(0).toUpperCase() + currentBadge.slice(1)}
@@ -476,18 +585,10 @@ export default function Dashboard() {
                     <span className="tw-dashboard-badge-score-label"> score</span>
                   )}
                 </div>
-                {profile?.badge_progress?.next_badge_name && (
-                  <div className="tw-dashboard-badge-bar">
-                    <div
-                      className="tw-dashboard-badge-bar-fill"
-                      style={{ width: `${profile.badge_progress.progress_pct}%` }}
-                    />
-                  </div>
-                )}
                 <p className="tw-dashboard-badge-sub">
                   {profile?.badge_progress?.next_badge_name
                     ? `${profile.badge_progress.remaining} to ${profile.badge_progress.next_badge_name}`
-                    : 'Table topics completed increase your score and unlock higher badges.'}
+                    : 'Complete table topics to increase your score.'}
                 </p>
               </div>
             </div>
@@ -495,19 +596,56 @@ export default function Dashboard() {
         </section>
       </div>
 
+      {isFreePlan && profileLoaded && (
+        <section className="tw-dashboard-quota">
+          <QuotaRing used={minutesUsed} limit={minutesLimit} />
+          <div className="tw-dashboard-quota-info">
+            <h3 className="tw-dashboard-quota-title">
+              {minutesUsed >= minutesLimit
+                ? 'Monthly quota reached!'
+                : minutesUsed >= minutesLimit * 0.8
+                  ? 'Running low on practice time!'
+                  : 'Free Plan — Monthly Usage'}
+            </h3>
+            <p className={`tw-dashboard-quota-desc ${
+              minutesUsed >= minutesLimit
+                ? 'tw-dashboard-quota-danger'
+                : minutesUsed >= minutesLimit * 0.5
+                  ? 'tw-dashboard-quota-warn'
+                  : ''
+            }`}>
+              {minutesUsed >= minutesLimit
+                ? "You've used all your free minutes this month. Upgrade to keep practicing and improving your communication skills."
+                : minutesUsed >= minutesLimit * 0.8
+                  ? `Only ${minutesRemaining} minutes remaining this month. Upgrade now for more practice time and premium features.`
+                  : `You've used ${minutesUsed} of ${minutesLimit} free minutes this month. Upgrade to unlock more practice time.`}
+            </p>
+            <Link to="/profile" className="tw-btn-primary tw-dashboard-quota-btn">
+              Upgrade Now
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="tw-dashboard-topics-full">
         <div className="tw-dashboard-section-head">
           <h3 className="tw-dashboard-section-title">Recommended Topics</h3>
-          <button
-            type="button"
-            className="tw-dashboard-view-all"
-            onClick={loadTopics}
-            disabled={topicsRefreshing}
-          >
-            <RefreshIcon />
-          </button>
+          {!quotaExceeded && (
+            <button
+              type="button"
+              className="tw-dashboard-view-all"
+              onClick={loadTopics}
+              disabled={topicsRefreshing}
+            >
+              <RefreshIcon />
+            </button>
+          )}
         </div>
-        {topicsLoading ? (
+        {quotaExceeded ? (
+          <p className="tw-muted">
+            Upgrade your plan to see personalized recommended topics and continue practicing.
+          </p>
+        ) : topicsLoading ? (
           <p className="tw-muted">Loading topics…</p>
         ) : (
           <div className="tw-dashboard-topics-scroll-wrap">
@@ -515,10 +653,9 @@ export default function Dashboard() {
               <ChevronLeftIcon />
             </button>
             <div className="tw-dashboard-topics-scroll" ref={topicsScrollRef}>
-            {topicCards.slice(0, 6).map((t, i) => (
+            {topicCards.slice(0, 6).map((t) => (
               <div key={t.title + (t.category || '')} className="tw-topic-card">
                 <div className="tw-topic-card-head">
-                  <div className="tw-topic-card-icon">{i % 2 === 0 ? <GlobeIcon /> : <BriefcaseIcon />}</div>
                   <span className={`tw-topic-tag ${t.tagClass || getTagClass(t.category)}`}>{t.category}</span>
                 </div>
                 <h4 className="tw-topic-card-title">{t.title}</h4>
@@ -618,43 +755,98 @@ export default function Dashboard() {
 
       <section className="tw-dashboard-form-section">
         <h4 className="tw-dashboard-form-title">Or start with any topic</h4>
-        <form onSubmit={handleStartConversation} className="tw-dashboard-form">
-          <input
-            type="text"
-            placeholder="e.g. Job interview, presentation, small talk"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="tw-input"
-          />
-          <button type="submit" disabled={starting} className="tw-btn-primary">
-            {starting ? 'Starting…' : 'Start conversation'}
-          </button>
-        </form>
-        {error && <p className="tw-error">{error}</p>}
-      </section>
-
-      <section className="tw-dashboard-past">
-        <h3 className="tw-dashboard-past-title">Past conversations</h3>
-        {loading ? (
-          <p className="tw-muted">Loading…</p>
-        ) : conversations.length === 0 ? (
-          <p className="tw-muted">No conversations yet. Start one above.</p>
+        {quotaExceeded ? (
+          <p className="tw-muted">Upgrade to start new conversations with any topic.</p>
         ) : (
-          <ul className="tw-conv-list">
-            {conversations.slice(0, 5).map((c) => (
-              <li key={c.id}>
-                <Link to={`/conversations/${c.id}`} className="tw-conv-link">
-                  <span className="tw-conv-topic">{c.topic}</span>
-                  <span className="tw-conv-meta">
-                    {c.started_at ? ` - ${new Date(c.started_at).toLocaleDateString()}` : ''}
-                    {c.status === 'ended' && c.rating ? ` - ${c.rating.replace('_', ' ')}` : ''}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <>
+            <form onSubmit={handleStartConversation} className="tw-dashboard-form">
+              <input
+                type="text"
+                placeholder="e.g. Job interview, presentation, small talk"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="tw-input"
+              />
+              <button type="submit" disabled={starting} className="tw-btn-primary">
+                {starting ? 'Starting…' : 'Start conversation'}
+              </button>
+            </form>
+            {error && <p className="tw-error">{error}</p>}
+          </>
         )}
       </section>
+
+      {showQuotaExceededModal && (
+        <div
+          className="tw-voice-leave-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowQuotaExceededModal(false)}
+        >
+          <div className="tw-voice-upgrade-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="tw-voice-upgrade-header">
+              <h2 className="tw-voice-upgrade-title">Monthly practice limit reached</h2>
+              <button
+                type="button"
+                className="tw-voice-upgrade-close"
+                onClick={() => setShowQuotaExceededModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="tw-voice-upgrade-desc">
+              You&apos;ve used all your free minutes this month. Upgrade to get more practice time and premium features.
+            </p>
+            <div className="tw-voice-upgrade-plans">
+              {plans.filter((p) => p.price > 0).map((plan) => (
+                <div key={plan.id} className="tw-voice-upgrade-plan-card">
+                  <h3 className="tw-voice-upgrade-plan-name">{plan.name}</h3>
+                  <p className="tw-voice-upgrade-plan-price">
+                    ₹{plan.price.toFixed(2)} <span>/ {plan.duration} days</span>
+                  </p>
+                  {plan.description && (
+                    <div
+                      className="tw-voice-upgrade-plan-desc"
+                      dangerouslySetInnerHTML={{ __html: plan.description }}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="tw-btn-primary tw-voice-upgrade-plan-btn"
+                    disabled={upgradeSubmittingId === plan.id}
+                    onClick={() => {
+                      setUpgradeSubmittingId(plan.id);
+                      subscribeToPlanWithPayment(
+                        plan.id,
+                        plan,
+                        upgradeUser,
+                        () => {
+                          setUpgradeSubmittingId(null);
+                          setShowQuotaExceededModal(false);
+                          getProfile().then(setProfile).catch(() => {});
+                        },
+                        (err) => {
+                          setUpgradeSubmittingId(null);
+                          if (err?.error === 'Payment cancelled') return;
+                        },
+                      );
+                    }}
+                  >
+                    {upgradeSubmittingId === plan.id ? 'Processing…' : `Get ${plan.name}`}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="tw-voice-upgrade-skip"
+              onClick={() => setShowQuotaExceededModal(false)}
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

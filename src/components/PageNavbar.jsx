@@ -10,7 +10,8 @@ function getDefaultTitle(pathname) {
   if (pathname.startsWith('/topics')) return 'Practice Topics';
   if (pathname.startsWith('/profile')) return 'Profile';
   if (pathname.startsWith('/voice')) return 'Voice Practice';
-  if (pathname.startsWith('/conversations')) return 'Conversation';
+  if (pathname === '/conversations') return 'Conversations';
+  if (pathname.startsWith('/conversations/')) return 'Conversation';
   return 'Dashboard';
 }
 
@@ -38,7 +39,7 @@ function LogoutIcon() {
   );
 }
 
-export default function PageNavbar() {
+export default function PageNavbar({ planLabel = 'Free' }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,7 +63,7 @@ export default function PageNavbar() {
         <h1 className="tw-page-navbar-title">{displayTitle}</h1>
         <div className="tw-page-navbar-right">
           {rightActions}
-          <span className="tw-page-navbar-badge">Free Plan</span>
+          <span className="tw-page-navbar-badge">{planLabel} Plan</span>
           <button
             type="button"
             onClick={toggleTheme}

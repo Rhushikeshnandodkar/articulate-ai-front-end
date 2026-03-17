@@ -41,8 +41,7 @@ export default function ProfileSetup() {
     getProfile()
       .then((data) => {
         if (data.has_completed_profile) {
-          // Profile already done; go straight to subscriptions
-          navigate('/subscriptions', { replace: true });
+          navigate('/dashboard', { replace: true });
         } else {
           setForm({
             profession: data.profession || 'student',
@@ -64,13 +63,18 @@ export default function ProfileSetup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const interests = (form.interests_text || '').trim();
+    if (!interests) {
+      setError('Please add your interests. The more interests you add, the better we can personalize your practice topics.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await updateProfile(form);
       const updated = await getProfile();
       if (updated.has_completed_profile) {
-        navigate('/subscriptions', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setError('Please fill in your bio and interests to complete your profile.');
       }
@@ -157,14 +161,16 @@ export default function ProfileSetup() {
             placeholder="Tell us a bit about your background and what you want to improve."
           />
 
-          <label className="tw-modal-label">Interests</label>
+          <label className="tw-modal-label">Interests <span className="tw-required">(required)</span></label>
+          <p className="tw-modal-helper">Add as many interests as possible for personalized practice topics.</p>
           <input
             type="text"
             name="interests_text"
             value={form.interests_text}
             onChange={handleChange}
             className="tw-modal-field"
-            placeholder="e.g. interviews, presentations, networking"
+            placeholder="e.g. cricket, music, coding, relationships"
+            required
           />
 
           <div className="tw-modal-actions">

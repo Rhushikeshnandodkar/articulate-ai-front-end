@@ -1,17 +1,17 @@
 import '../styles/profile.css';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlans, subscribeToPlan, getProfile } from '../services/api';
+import { getPlans, getProfile, getMe, subscribeToPlanWithPayment } from '../services/api';
 
 export default function Subscriptions() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // If user already has a plan, skip this page
     getProfile()
       .then((p) => {
         if (p.subscription_plan) {
@@ -23,6 +23,10 @@ export default function Subscriptions() {
   }, [navigate]);
 
   useEffect(() => {
+    getMe().then(setUser).catch(() => setUser(null));
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     getPlans()
       .then((data) => setPlans(Array.isArray(data.plans) ? data.plans : []))
@@ -30,17 +34,27 @@ export default function Subscriptions() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSelect = async (planId) => {
+  const handleSelect = (planId) => {
     setError(null);
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
     setSubmitting(true);
-    try {
-      await subscribeToPlan(planId);
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      setError(err?.error || err?.detail || 'Failed to select plan. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+    subscribeToPlanWithPayment(
+      planId,
+      plan,
+      user,
+      () => {
+        setSubmitting(false);
+        navigate('/dashboard', { replace: true });
+      },
+      (err) => {
+        setSubmitting(false);
+        if (err?.error !== 'Payment cancelled') {
+          const msg = err?.error || err?.detail || err?.message || (typeof err === 'string' ? err : '');
+          setError(msg || 'Failed to select plan. Please try again.');
+        }
+      }
+    );
   };
 
   return (
@@ -57,7 +71,7 @@ export default function Subscriptions() {
             </div>
             <h1 className="auth-card-title">Choose your plan</h1>
             <p className="auth-card-subtitle">
-              Pick how you want to practice. You can switch plans later as we add billing.
+              Pick how you want to practice. You can switch plans anytime from your profile.
             </p>
           </div>
         </div>
