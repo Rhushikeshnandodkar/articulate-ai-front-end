@@ -31,10 +31,9 @@ export default function Login() {
     } else {
       const err = result.payload;
       if (err?.error === 'email_not_verified' && err?.email) {
-        navigate(`/verify-email?email=${encodeURIComponent(err.email)}`, {
-          replace: true,
-          state: { username, password },
-        });
+        sessionStorage.setItem('signup_username', username);
+        sessionStorage.setItem('signup_password', password);
+        navigate(`/verify-email?email=${encodeURIComponent(err.email)}`, { replace: true });
       }
     }
   };

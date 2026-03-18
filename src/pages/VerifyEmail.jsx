@@ -9,7 +9,8 @@ export default function VerifyEmail() {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const initialEmail = searchParams.get('email') || '';
-  const signupState = location.state || {};
+  const savedUsername = sessionStorage.getItem('signup_username') || location.state?.username || '';
+  const savedPassword = sessionStorage.getItem('signup_password') || location.state?.password || '';
   const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,15 +32,15 @@ export default function VerifyEmail() {
     try {
       await verifyEmailOtp({ email, otp });
       setSuccess(true);
-      // If we have signup credentials, auto-login and go to profile setup
-      if (signupState.username && signupState.password) {
-        const result = await dispatch(loginUser({ username: signupState.username, password: signupState.password }));
+      if (savedUsername && savedPassword) {
+        const result = await dispatch(loginUser({ username: savedUsername, password: savedPassword }));
+        sessionStorage.removeItem('signup_username');
+        sessionStorage.removeItem('signup_password');
         if (loginUser.fulfilled.match(result)) {
           navigate('/profile-setup', { replace: true });
           return;
         }
       }
-      // Fallback: go to login
       navigate('/login', { replace: true });
     } catch (err) {
       setError(err?.error || err?.detail || 'Could not verify code. Please try again.');

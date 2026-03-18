@@ -23,8 +23,14 @@ export async function register(payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) throw data;
+  let data;
+  try {
+    data = await res.json();
+  } catch (_) {
+    if (res.ok || res.status === 201) return { success: true };
+    throw { error: `Registration failed (${res.status})` };
+  }
+  if (!res.ok && res.status !== 201) throw data;
   return data;
 }
 

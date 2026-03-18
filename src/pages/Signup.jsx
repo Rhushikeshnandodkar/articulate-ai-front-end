@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerUser, clearError } from '../store/slices/authSlice';
+import { register } from '../services/api';
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -10,9 +9,9 @@ export default function Signup() {
     password: '',
     password2: '',
   });
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
 
@@ -20,36 +19,22 @@ export default function Signup() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const goToVerify = () => {
+    sessionStorage.setItem('signup_username', form.username);
+    sessionStorage.setItem('signup_password', form.password);
+    navigate(`/verify-email?email=${encodeURIComponent(form.email)}`, { replace: true });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(clearError());
-    const result = await dispatch(registerUser(form));
-    if (registerUser.fulfilled.match(result)) {
-      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`, {
-        replace: true,
-        state: {
-          email: form.email,
-          username: form.username,
-          password: form.password,
-        },
-      });
-    } else {
-      const err = result.payload;
-      const errStr = typeof err === 'string' ? err : JSON.stringify(err || '');
-      const alreadyExists =
-        errStr.toLowerCase().includes('already exists') ||
-        errStr.toLowerCase().includes('username') ||
-        errStr.toLowerCase().includes('unique');
-      if (!alreadyExists && form.email) {
-        navigate(`/verify-email?email=${encodeURIComponent(form.email)}`, {
-          replace: true,
-          state: {
-            email: form.email,
-            username: form.username,
-            password: form.password,
-          },
-        });
-      }
+    setError(null);
+    setLoading(true);
+    try {
+      await register(form);
+      goToVerify();
+    } catch (err) {
+      setError(err);
+      setLoading(false);
     }
   };
 
