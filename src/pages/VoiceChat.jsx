@@ -57,36 +57,24 @@ export default function VoiceChat() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const listeningRef = useRef(false);
-  const transcriptEndRef = useRef(null);
-  const sessionStartRef = useRef(null);
+  const hasSpokenRef = useRef(false);
+  const speakingStartRef = useRef(null);
   listeningRef.current = listening;
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
     if (!conversationId) return;
-    sessionStartRef.current = sessionStartRef.current ?? Date.now();
+    const start = Date.now();
     const t = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - sessionStartRef.current) / 1000));
+      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => clearInterval(t);
   }, [conversationId]);
   const elapsedDisplay = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
-  // Session progress: 10% per minute, assuming a 10-minute session target.
   const sessionProgress = Math.min(100, Math.floor(elapsedSeconds / 60) * 10);
+
   const lastAssistantMessage = transcriptLines.filter((l) => l.role === 'assistant').slice(-1)[0]?.content ?? '';
-  const upcomingPlaceholders = [
-    'Leadership experience and management style',
-    'Problem-solving approach in challenging situations',
-    'Career goals and professional development',
-  ];
-
-  const scrollToTranscriptEnd = () => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToTranscriptEnd();
-  }, [transcriptLines, displayTranscript]);
+  const lastUserMessage = transcriptLines.filter((l) => l.role === 'user').slice(-1)[0]?.content ?? '';
 
   const playAudio = useCallback((url, options = {}) => {
     if (!url) return;
@@ -146,14 +134,14 @@ export default function VoiceChat() {
     playAudio(pendingPlayUrl, { revokeOnEnd: false });
   }, [pendingPlayUrl, playAudio]);
 
-  const sendToBackend = useCallback(async (audioBlobOrText) => {
+  const sendToBackend = useCallback(async (audioBlobOrText, spokenDurationSeconds = 0) => {
     const isAudio = audioBlobOrText instanceof Blob;
     setStatus('sending');
     setError(null);
     try {
       const { blob, text: aiText } = isAudio
-        ? await voiceChat({ audioBlob: audioBlobOrText, conversationId })
-        : await voiceChat({ text: audioBlobOrText, conversationId });
+        ? await voiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds })
+        : await voiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds });
       let url = null;
       if (blob) {
         url = URL.createObjectURL(blob);
@@ -162,7 +150,6 @@ export default function VoiceChat() {
           return url;
         });
       } else {
-        // Text-only reply (builder plan) – clear any pending audio.
         setPendingPlayUrl((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return null;
@@ -174,6 +161,7 @@ export default function VoiceChat() {
         { role: 'user', content: userDisplay },
         { role: 'assistant', content: aiText || '(reply)' },
       ]);
+      hasSpokenRef.current = true;
       setStatus('idle');
       if (url) {
         playAudio(url);
@@ -188,7 +176,7 @@ export default function VoiceChat() {
     if (!conversationId) return;
     if (transcriptLines.length > 0) return;
     const content = topic
-      ? `Welcome! Let's practice ${topic}. When you're ready, click Start and tell me in your own words what you'd like to work on.`
+      ? `Welcome! Let's practice "${topic}". When you're ready, click Start and share your thoughts.`
       : "Welcome! When you're ready, click Start and tell me what you would like to practice today.";
     setTranscriptLines([{ role: 'assistant', content }]);
   }, [conversationId, topic, transcriptLines.length]);
@@ -258,6 +246,11 @@ export default function VoiceChat() {
 
   const sentByPauseRef = useRef(false);
 
+  const getSpokenDuration = () => {
+    if (!speakingStartRef.current) return 0;
+    return (Date.now() - speakingStartRef.current) / 1000;
+  };
+
   const toggleListening = () => {
     if (!SpeechRecognition) {
       setError('Speech recognition is not supported. Use Chrome.');
@@ -269,10 +262,13 @@ export default function VoiceChat() {
     }
     if (listening) {
       const text = accumulatedRef.current.trim();
+      const duration = getSpokenDuration();
+      speakingStartRef.current = null;
       const recorder = mediaRecorderRef.current;
 
       if (recorder && recorder.state !== 'inactive') {
         sentByPauseRef.current = true;
+        sentByPauseRef.duration = duration;
         recorder.stop();
       } else {
         try {
@@ -281,7 +277,7 @@ export default function VoiceChat() {
         setListening(false);
         setDisplayTranscript('');
         if (text) {
-          sendToBackend(text);
+          sendToBackend(text, duration);
           setDisplayTranscript(text);
         } else {
           setError('No speech detected. Say something, then click Pause.');
@@ -297,6 +293,8 @@ export default function VoiceChat() {
       setDisplayTranscript('');
     } else {
       sentByPauseRef.current = false;
+      sentByPauseRef.duration = 0;
+      speakingStartRef.current = Date.now();
       setError(null);
       setDisplayTranscript('');
       accumulatedRef.current = '';
@@ -320,15 +318,17 @@ export default function VoiceChat() {
         recorder.onstop = () => {
           stream.getTracks().forEach((t) => t.stop());
           if (!sentByPauseRef.current) return;
+          const duration = sentByPauseRef.duration || 0;
           sentByPauseRef.current = false;
+          sentByPauseRef.duration = 0;
           const blob = audioChunksRef.current.length > 0
             ? new Blob(audioChunksRef.current, { type: 'audio/webm' })
             : null;
           const text = accumulatedRef.current.trim();
           if (blob && blob.size > 1000) {
-            sendToBackend(blob);
+            sendToBackend(blob, duration);
           } else if (text) {
-            sendToBackend(text);
+            sendToBackend(text, duration);
           } else {
             setError('No speech detected. Say something, then click Pause.');
             setStatus('idle');
@@ -365,13 +365,13 @@ export default function VoiceChat() {
     }
   };
 
-  // If user navigates away/closes the practice page without pressing "End Session",
-  // automatically end the conversation so stats and minutes are updated.
   useEffect(() => {
     return () => {
       if (!conversationId) return;
       if (endedByUserRef.current) return;
-      endConversation(conversationId).catch(() => {});
+      if (hasSpokenRef.current) {
+        endConversation(conversationId).catch(() => {});
+      }
     };
   }, [conversationId]);
 
@@ -383,101 +383,34 @@ export default function VoiceChat() {
     setShowEndConfirm(true);
   };
 
-  // Intercept browser back button while on the practice page and show the end-session popup instead.
   useEffect(() => {
     if (!conversationId) return;
-
     const state = { articulateGuard: true };
     window.history.pushState(state, '');
-
     const onPopState = (event) => {
       if (event.state && event.state.articulateGuard) {
-        // Stay on the page and show confirmation instead of navigating back.
         setShowEndConfirm(true);
         window.history.pushState(state, '');
       }
     };
-
     window.addEventListener('popstate', onPopState);
-    return () => {
-      window.removeEventListener('popstate', onPopState);
-    };
+    return () => window.removeEventListener('popstate', onPopState);
   }, [conversationId]);
 
-  // Intercept clicks on the practice page (except Start/Pause and the modal) to prompt for ending the session.
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const handleClick = (event) => {
-      if (ending || showEndConfirm) return;
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-
-      // Only care about clicks inside the voice practice UI
-      if (!target.closest('.tw-voice-page')) return;
-
-      // Allow clicks on the main Start/Pause button
-      if (target.closest('.tw-voice-btn-start') || target.closest('.tw-voice-btn-pause')) return;
-
-      // Allow clicks inside the end-session confirmation modal itself
-      if (target.closest('.tw-voice-leave-modal')) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      setShowEndConfirm(true);
-    };
-
-    document.addEventListener('click', handleClick, true);
-    return () => {
-      document.removeEventListener('click', handleClick, true);
-    };
-  }, [conversationId, ending, showEndConfirm]);
-
-  // Intercept browser back button while on the practice page and show the end-session popup instead.
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const state = { articulateGuard: true };
-    window.history.pushState(state, '');
-
-    const onPopState = (event) => {
-      if (event.state && event.state.articulateGuard) {
-        // Stay on the page and show confirmation instead of navigating back.
-        setShowEndConfirm(true);
-        window.history.pushState(state, '');
-      }
-    };
-
-    window.addEventListener('popstate', onPopState);
-    return () => {
-      window.removeEventListener('popstate', onPopState);
-    };
-  }, [conversationId]);
+  const isAiSpeaking = status === 'playing';
+  const isProcessing = status === 'sending';
+  const isUserSpeaking = listening && status === 'listening';
 
   return (
     <div className="tw-voice-page">
-      <header className="tw-voice-header">
-        <div className="tw-voice-header-left">
-          <div className="tw-voice-logo">AI</div>
-          <h1 className="tw-voice-title">AI Communication Practice</h1>
-        </div>
-        <div className="tw-voice-header-actions">
-          {conversationId && (
-            <button
-              type="button"
-              className="tw-voice-end-btn"
-              onClick={requestEndSession}
-              disabled={ending}
-            >
-              {ending ? 'Ending…' : 'End Session'}
-            </button>
-          )}
-        </div>
-      </header>
-
       <div className="tw-voice-body">
         <aside className="tw-voice-sidebar">
           <h2 className="tw-voice-sidebar-title">Session Stats</h2>
+
+          <div className="tw-voice-stat-card tw-voice-stat-card--topic">
+            <p className="tw-voice-stat-label">Current Topic</p>
+            <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
+          </div>
 
           <div className="tw-voice-stat-card">
             <p className="tw-voice-stat-label">Time Elapsed</p>
@@ -491,31 +424,58 @@ export default function VoiceChat() {
           </div>
 
           <div className="tw-voice-stat-card">
-            <p className="tw-voice-stat-label">Current Topic</p>
-            <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
-            <p className="tw-voice-stat-desc">
-              {topic ? 'Building meaningful connections' : 'Speak and get real-time feedback'}
-            </p>
-          </div>
-
-          <div className="tw-voice-stat-card">
             <p className="tw-voice-stat-label">Session Progress</p>
             <div className="tw-voice-stat-row">
-              <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}% Complete</p>
+              <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
             </div>
             <div className="tw-voice-stat-bar">
               <div className="tw-voice-stat-bar-fill" style={{ width: `${sessionProgress}%`, background: 'var(--accent)' }} />
             </div>
           </div>
+
+          <div className="tw-voice-stat-card">
+            <p className="tw-voice-stat-label">Turns</p>
+            <p className="tw-voice-stat-value">{transcriptLines.filter(l => l.role === 'user').length}</p>
+          </div>
         </aside>
 
         <main className="tw-voice-main">
-          <section className="tw-voice-card">
-            <h3 className="tw-voice-card-title">Voice Practice Session</h3>
-            <p className="tw-voice-card-sub">Speak naturally and receive real-time feedback</p>
-            <div className={`tw-voice-wave-wrap ${listening && status === 'listening' ? 'tw-voice-wave-active' : ''}`}>
+          {/* Single unified card */}
+          <section className="tw-voice-card tw-voice-card--unified">
+            {/* AI message display */}
+            <div className={`tw-voice-ai-display ${isAiSpeaking ? 'tw-voice-ai-display--speaking' : ''}`}>
+              <div className="tw-voice-ai-display-label">
+                <span className={`tw-voice-ai-dot ${isAiSpeaking ? 'tw-voice-ai-dot--active' : ''}`} />
+                {isAiSpeaking ? 'AI is speaking…' : isProcessing ? 'AI is thinking…' : 'AI Coach'}
+              </div>
+              <p className="tw-voice-ai-display-text">
+                {isProcessing
+                  ? 'Processing your response…'
+                  : lastAssistantMessage || (topic ? `Let's practice "${topic}". Click Start Speaking when you're ready.` : "Click Start Speaking when you're ready.")}
+              </p>
+            </div>
+
+            {/* Waveform + controls */}
+            <div className={`tw-voice-wave-wrap ${isUserSpeaking ? 'tw-voice-wave-active' : ''}`}>
               <span /><span /><span /><span /><span /><span /><span />
             </div>
+
+            {/* User's live speech */}
+            <div className="tw-voice-user-display">
+              {isUserSpeaking && displayTranscript ? (
+                <p className="tw-voice-user-display-text tw-voice-user-display-text--live">{displayTranscript}</p>
+              ) : lastUserMessage && !isUserSpeaking ? (
+                <p className="tw-voice-user-display-text tw-voice-user-display-text--done">
+                  <span className="tw-voice-user-display-label">You said:</span> {lastUserMessage}
+                </p>
+              ) : (
+                <p className="tw-voice-user-display-placeholder">
+                  {isUserSpeaking ? 'Start speaking…' : 'Your speech will appear here'}
+                </p>
+              )}
+            </div>
+
+            {/* Controls row */}
             <div className="tw-voice-controls">
               <button
                 type="button"
@@ -524,26 +484,33 @@ export default function VoiceChat() {
                 disabled={status === 'sending' || status === 'playing'}
               >
                 {listening ? (
-                  <>
-                    <PauseIcon style={{ width: 18, height: 18 }} />
-                    Pause
-                  </>
+                  <><PauseIcon style={{ width: 18, height: 18 }} /> Pause</>
                 ) : (
-                  <>
-                    <PlayIcon style={{ width: 18, height: 18 }} />
-                    Start Speaking
-                  </>
+                  <><PlayIcon style={{ width: 18, height: 18 }} /> Start Speaking</>
                 )}
               </button>
+
+              {conversationId && (
+                <button
+                  type="button"
+                  className="tw-voice-end-btn"
+                  onClick={requestEndSession}
+                  disabled={ending}
+                >
+                  {ending ? 'Ending…' : 'End Session'}
+                </button>
+              )}
             </div>
-            {listening && status === 'listening' && (
+
+            {/* Status indicators */}
+            {isUserSpeaking && (
               <div className="tw-voice-status-line">
                 <span className="tw-voice-status-dot" aria-hidden />
                 Listening…
               </div>
             )}
-            {status === 'sending' && <div className="tw-voice-status-line">Getting reply…</div>}
-            {status === 'playing' && <div className="tw-voice-status-line">Playing AI reply…</div>}
+            {isProcessing && <div className="tw-voice-status-line">Getting reply…</div>}
+            {isAiSpeaking && <div className="tw-voice-status-line tw-voice-status-line--ai">Playing AI reply…</div>}
             {error && <div className="tw-voice-error">{error}</div>}
             {pendingPlayUrl && (
               <div className="tw-voice-play-reply">
@@ -552,42 +519,6 @@ export default function VoiceChat() {
                 </button>
               </div>
             )}
-          </section>
-
-          <section className="tw-voice-card">
-            <div className="tw-voice-followup-head">
-              <h3 className="tw-voice-card-title">AI Follow-up Questions</h3>
-              <span className="tw-voice-followup-badge">• Real-time</span>
-            </div>
-            <p className="tw-voice-current-q-label">Current Question:</p>
-            <div className="tw-voice-current-q-box">
-              <p className="tw-voice-current-q-text">
-                {lastAssistantMessage || (topic ? `Let's practice ${topic}. When you're ready, click Start and tell me what you'd like to work on.` : "When you're ready, click Start and tell me what you would like to practice today.")}
-              </p>
-            </div>
-            <p className="tw-voice-upcoming-title">Upcoming Topics:</p>
-            <ul className="tw-voice-upcoming-list">
-              {upcomingPlaceholders.map((text, i) => (
-                <li key={i}>{text}</li>
-              ))}
-            </ul>
-            <div className="tw-voice-transcript-area" style={{ marginTop: '1rem' }}>
-              {transcriptLines.map((line, i) => (
-                <div
-                  key={i}
-                  className={`tw-voice-transcript-line tw-voice-transcript-line-${line.role}`}
-                >
-                  <strong>{line.role === 'user' ? 'You' : 'AI'}</strong>
-                  {line.content}
-                </div>
-              ))}
-              {listening && displayTranscript && (
-                <div className="tw-voice-live">
-                  {displayTranscript}
-                </div>
-              )}
-              <div ref={transcriptEndRef} />
-            </div>
           </section>
         </main>
       </div>
