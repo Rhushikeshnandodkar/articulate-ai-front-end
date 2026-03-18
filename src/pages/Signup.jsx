@@ -33,6 +33,23 @@ export default function Signup() {
           password: form.password,
         },
       });
+    } else {
+      const err = result.payload;
+      const errStr = typeof err === 'string' ? err : JSON.stringify(err || '');
+      const alreadyExists =
+        errStr.toLowerCase().includes('already exists') ||
+        errStr.toLowerCase().includes('username') ||
+        errStr.toLowerCase().includes('unique');
+      if (!alreadyExists && form.email) {
+        navigate(`/verify-email?email=${encodeURIComponent(form.email)}`, {
+          replace: true,
+          state: {
+            email: form.email,
+            username: form.username,
+            password: form.password,
+          },
+        });
+      }
     }
   };
 

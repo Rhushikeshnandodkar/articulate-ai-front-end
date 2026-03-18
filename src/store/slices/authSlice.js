@@ -19,6 +19,9 @@ export const loginUser = createAsyncThunk(
       const data = await api.login(username, password);
       return data;
     } catch (err) {
+      if (err?.error === 'email_not_verified') {
+        return rejectWithValue(err);
+      }
       return rejectWithValue(err.detail || err.non_field_errors || err);
     }
   }

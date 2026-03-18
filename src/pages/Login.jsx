@@ -28,6 +28,14 @@ export default function Login() {
       } catch (_) {
         navigate('/profile-setup', { replace: true });
       }
+    } else {
+      const err = result.payload;
+      if (err?.error === 'email_not_verified' && err?.email) {
+        navigate(`/verify-email?email=${encodeURIComponent(err.email)}`, {
+          replace: true,
+          state: { username, password },
+        });
+      }
     }
   };
 
