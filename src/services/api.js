@@ -285,12 +285,13 @@ export async function voiceChat({ text = '', conversationId = null, audioBlob = 
       : { error: res.statusText };
     throw err;
   }
-  // Backend returns raw audio (audio/mpeg) and AI text in header
+  // Backend returns raw audio (audio/wav from Groq, or audio/mpeg) and AI text in header
   if (contentType.includes('audio/') || res.headers.get('X-AI-Response-Text')) {
     const buf = await res.arrayBuffer();
-    const blob = new Blob([buf], { type: 'audio/mpeg' });
+    const blobType = contentType.includes('audio/') ? contentType.split(';')[0].trim() : 'audio/wav';
+    const blob = new Blob([buf], { type: blobType });
     if (blob.size === 0) {
-      throw { error: 'Server returned empty audio. Check backend and ElevenLabs.' };
+      throw { error: 'Server returned empty audio. Check backend and TTS service.' };
     }
     let text = '';
     const textB64 = res.headers.get('X-AI-Response-Text');
