@@ -344,13 +344,12 @@ export default function Dashboard() {
     }
   };
 
-  const displayName = user?.username || 'Alex';
   const { setPageNavbar } = usePageNavbar();
 
   useEffect(() => {
-    setPageNavbar({ title: `Welcome, ${displayName}` });
+    setPageNavbar({ title: 'Dashboard' });
     return () => setPageNavbar({});
-  }, [displayName, setPageNavbar]);
+  }, [setPageNavbar]);
   const suggestedTopicObj = Array.isArray(recommendedTopics) && recommendedTopics.length > 0
     ? (typeof recommendedTopics[0] === 'string'
         ? {

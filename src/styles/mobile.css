@@ -24,6 +24,11 @@
     border-radius: 2px;
   }
 
+  /* Landing */
+  .landing-card {
+    border-radius: 2px;
+  }
+
   /* Auth - sharper corners */
   .auth-card,
   .auth-page-otp .auth-card {

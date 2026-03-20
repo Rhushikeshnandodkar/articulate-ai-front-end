@@ -1,4 +1,9 @@
 /* Theme variables - dark (default) */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root,
 [data-theme="dark"] {
   --bg-app: #1A1A1A;
