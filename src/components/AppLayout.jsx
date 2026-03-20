@@ -104,6 +104,7 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [planLabel, setPlanLabel] = useState('Free');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -148,11 +149,34 @@ export default function AppLayout() {
     navigate('/login', { replace: true });
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <PageNavbarProvider>
       <div className="tw-root">
-        <aside className="tw-sidebar">
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="tw-sidebar-backdrop"
+            onClick={closeSidebar}
+            onKeyDown={(e) => e.key === 'Escape' && closeSidebar()}
+            role="button"
+            tabIndex={0}
+            aria-label="Close menu"
+          />
+        )}
+        <aside className={`tw-sidebar ${sidebarOpen ? 'tw-sidebar-open' : ''}`}>
           <div className="tw-sidebar-inner">
+            <button
+              type="button"
+              className="tw-sidebar-close-btn"
+              onClick={closeSidebar}
+              aria-label="Close menu"
+            >
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <div className="tw-sidebar-brand">
               <Link to="/dashboard" className="tw-sidebar-brand-link">
                 <LogoIcon className="tw-sidebar-brand-icon" />
@@ -173,6 +197,7 @@ export default function AppLayout() {
                     key={label}
                     to={to}
                     className={`tw-nav-link ${isActive ? 'tw-nav-link-active' : 'tw-nav-link-inactive'}`}
+                    onClick={closeSidebar}
                   >
                     <Icon className="tw-nav-icon" />
                     <span>{label}</span>
@@ -206,13 +231,36 @@ export default function AppLayout() {
         </aside>
 
         <div className="tw-main-wrap">
-          <PageNavbar planLabel={planLabel} />
+          <PageNavbar planLabel={planLabel} onMenuClick={() => setSidebarOpen(true)} />
           <main className="tw-main-content">
             <div className="tw-main-content-inner">
               <Outlet />
             </div>
           </main>
         </div>
+
+        {/* Mobile bottom navigation */}
+        <nav className="tw-bottom-nav" aria-label="Main navigation">
+          {navItems.map(({ to, label, Icon }) => {
+            const { pathname } = location;
+            const isActive =
+              (to === '/dashboard' && pathname.startsWith('/dashboard')) ||
+              (to === '/topics' && (pathname === '/topics' || pathname === '/voice')) ||
+              (to === '/conversations' && pathname.startsWith('/conversations')) ||
+              (to === '/profile' && pathname.startsWith('/profile'));
+            return (
+              <Link
+                key={label}
+                to={to}
+                className={`tw-bottom-nav-link ${isActive ? 'tw-bottom-nav-link-active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <Icon className="tw-nav-icon" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </PageNavbarProvider>
   );

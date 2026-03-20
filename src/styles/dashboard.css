@@ -1021,6 +1021,10 @@
   margin-top: 0.5rem;
 }
 
+.tw-dashboard-error {
+  margin: 0.75rem 0 0;
+}
+
 /* Past conversations */
 .tw-dashboard-past {
   margin-top: 1.25rem;
@@ -1175,6 +1179,196 @@
   .tw-dashboard-quota-btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Mobile (Android app feel) */
+@media (max-width: 767px) {
+  .tw-dashboard {
+    padding: 0 0 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .tw-dashboard-header-wrap {
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-dashboard-header {
+    height: 56px;
+    min-height: 56px;
+    padding: 0 1rem;
+  }
+
+  .tw-dashboard-welcome {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .tw-dashboard-card {
+    padding: 1rem 1rem;
+  }
+
+  .tw-dashboard-grid .tw-dashboard-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .tw-dashboard-ready-title {
+    font-size: 0.625rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tw-dashboard-ready-desc {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-dashboard-daily-topic-title {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .tw-dashboard-goal-title {
+    font-size: 0.8125rem;
+  }
+
+  .tw-dashboard-goal-value {
+    font-size: 1.125rem;
+  }
+
+  .tw-dashboard-section-title {
+    font-size: 0.9375rem;
+  }
+
+  .tw-dashboard-stats-bar {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-dashboard-stat-box {
+    min-width: 70px;
+    max-width: 100%;
+    padding: 0.5rem 0.5rem 0.75rem;
+  }
+
+  .tw-dashboard-stat-value {
+    font-size: 1.125rem;
+  }
+
+  .tw-dashboard-stat-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-dashboard-streak {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-dashboard-streak-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tw-dashboard-streak-label {
+    font-size: 0.625rem;
+  }
+
+  .tw-dashboard-streak-count {
+    font-size: 1.25rem;
+  }
+
+  .tw-dashboard-streak-unit {
+    font-size: 0.75rem;
+  }
+
+  .tw-dashboard-streak-day {
+    width: 20px;
+    height: 24px;
+    font-size: 0.65rem;
+  }
+
+  .tw-dashboard-streak-days {
+    grid-auto-columns: 20px;
+  }
+
+  .tw-dashboard-badge-ring-wrap {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tw-dashboard-badge-ring-svg {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tw-dashboard-badge-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .tw-dashboard-badge-name {
+    font-size: 0.875rem;
+  }
+
+  .tw-dashboard-badge-score {
+    font-size: 0.75rem;
+  }
+
+  .tw-dashboard-topics-full {
+    padding: 1rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-topic-card {
+    flex: 0 0 240px;
+    padding: 0.875rem 1rem;
+  }
+
+  .tw-topic-card-title {
+    font-size: 0.875rem;
+  }
+
+  .tw-topic-card-desc {
+    font-size: 0.75rem;
+  }
+
+  .tw-dashboard-form-title {
+    font-size: 0.8125rem;
+  }
+
+  .tw-dashboard-past-title {
+    font-size: 0.9375rem;
+  }
+
+  .tw-conv-link {
+    font-size: 0.875rem;
+  }
+
+  .tw-conv-meta {
+    font-size: 0.75rem;
+  }
+
+  .tw-dashboard-quota {
+    padding: 1rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-quota-ring-wrap {
+    width: 80px;
+    height: 80px;
+  }
+
+  .tw-quota-ring-value {
+    font-size: 1.25rem;
+  }
+
+  .tw-dashboard-quota-title {
+    font-size: 0.9375rem;
+  }
+
+  .tw-dashboard-quota-desc {
+    font-size: 0.8125rem;
   }
 }
 

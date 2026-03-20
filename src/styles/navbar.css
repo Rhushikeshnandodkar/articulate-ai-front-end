@@ -32,6 +32,13 @@
   box-sizing: border-box;
 }
 
+.tw-page-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
 .tw-page-navbar-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -96,4 +103,66 @@
 .tw-page-navbar-logout-btn svg {
   width: 1.125rem;
   height: 1.125rem;
+}
+
+/* Hamburger menu - mobile only */
+.tw-page-navbar-menu-btn {
+  display: none;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .tw-page-navbar-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin-right: 0.5rem;
+    background: var(--input-bg);
+    border: none;
+    border-radius: 2px;
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .tw-page-navbar-menu-btn:hover {
+    background: var(--hover-bg);
+  }
+
+  .tw-page-navbar {
+    left: 0;
+    height: 56px;
+  }
+
+  .tw-page-navbar-inner {
+    height: 56px;
+    min-height: 56px;
+    padding: 0 1rem;
+  }
+
+  .tw-page-navbar-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .tw-page-navbar-badge {
+    font-size: 0.75rem;
+  }
+
+  .tw-page-navbar-theme-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .tw-page-navbar-logout-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .tw-page-navbar-logout-btn span {
+    display: none;
+  }
 }

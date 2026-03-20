@@ -708,3 +708,112 @@
     padding: 1rem;
   }
 }
+
+/* Mobile (Android app feel) */
+@media (max-width: 767px) {
+  .tw-voice-page {
+    height: calc(100vh - 56px);
+  }
+
+  .tw-voice-sidebar {
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+  }
+
+  .tw-voice-sidebar-title {
+    font-size: 0.5625rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tw-voice-stat-card {
+    min-width: 120px;
+    padding: 0.75rem 1rem;
+  }
+
+  .tw-voice-stat-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-voice-stat-value {
+    font-size: 0.9375rem;
+  }
+
+  .tw-voice-stat-topic {
+    font-size: 0.8125rem;
+  }
+
+  .tw-voice-stat-desc {
+    font-size: 0.75rem;
+  }
+
+  .tw-voice-card {
+    padding: 1rem;
+  }
+
+  .tw-voice-ai-display {
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-voice-ai-display-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-voice-ai-display-text {
+    font-size: 0.875rem;
+  }
+
+  .tw-voice-user-display {
+    padding: 0.75rem 1rem;
+    min-height: 48px;
+  }
+
+  .tw-voice-user-display-text {
+    font-size: 0.8125rem;
+  }
+
+  .tw-voice-btn-start,
+  .tw-voice-btn-pause {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .tw-voice-end-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .tw-voice-leave-modal {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .tw-voice-leave-title {
+    font-size: 1rem;
+  }
+
+  .tw-voice-leave-text {
+    font-size: 0.8125rem;
+  }
+
+  .tw-voice-upgrade-modal {
+    padding: 1.25rem 1rem;
+    width: 96%;
+  }
+
+  .tw-voice-upgrade-title {
+    font-size: 1.125rem;
+  }
+
+  .tw-voice-upgrade-desc {
+    font-size: 0.8125rem;
+  }
+
+  .tw-voice-upgrade-plan-name {
+    font-size: 0.9375rem;
+  }
+
+  .tw-voice-upgrade-plan-price {
+    font-size: 0.875rem;
+  }
+}

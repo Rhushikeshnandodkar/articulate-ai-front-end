@@ -32,14 +32,6 @@ function getTagClass(category) {
   return CATEGORY_TAG_CLASS[category] || 'tw-topic-tag-blue';
 }
 
-function SearchIcon() {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
-
 function BellIcon() {
   return (
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -164,8 +156,6 @@ export default function Dashboard() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [topic, setTopic] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState(null);
   const topicsScrollRef = useRef(null);
@@ -314,7 +304,7 @@ export default function Dashboard() {
   }, [isAuthenticated]);
 
   const startPractice = async (topicName) => {
-    const t = typeof topicName === 'string' ? topicName : (topicName?.title || topic || '').trim();
+    const t = typeof topicName === 'string' ? topicName : (topicName?.title || '').trim();
     const topicDescription =
       typeof topicName === 'object'
         ? (topicName.description || topicName.desc || '')
@@ -352,11 +342,6 @@ export default function Dashboard() {
     } finally {
       setStarting(false);
     }
-  };
-
-  const handleStartConversation = (e) => {
-    e.preventDefault();
-    startPractice(topic);
   };
 
   const displayName = user?.username || 'Alex';
@@ -519,6 +504,7 @@ export default function Dashboard() {
             </>
           )}
         </section>
+        {error && <p className="tw-error tw-dashboard-error">{error}</p>}
 
         <section className="tw-dashboard-card tw-dashboard-badge-card">
           <h3 className="tw-dashboard-goal-title">Table Topic Badge</h3>
@@ -701,10 +687,6 @@ export default function Dashboard() {
           <span className="tw-dashboard-stat-value">{profile?.confidence_score ?? 0}</span>
           <span className="tw-dashboard-stat-label">Confidence</span>
         </div>
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.clarity_score ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Clarity</span>
-        </div>
       </section>
 
       <section className="tw-dashboard-streak">
@@ -752,29 +734,6 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
-      </section>
-
-      <section className="tw-dashboard-form-section">
-        <h4 className="tw-dashboard-form-title">Or start with any topic</h4>
-        {quotaExceeded ? (
-          <p className="tw-muted">Upgrade to start new conversations with any topic.</p>
-        ) : (
-          <>
-            <form onSubmit={handleStartConversation} className="tw-dashboard-form">
-              <input
-                type="text"
-                placeholder="e.g. Job interview, presentation, small talk"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="tw-input"
-              />
-              <button type="submit" disabled={starting} className="tw-btn-primary">
-                {starting ? 'Starting…' : 'Start conversation'}
-              </button>
-            </form>
-            {error && <p className="tw-error">{error}</p>}
-          </>
-        )}
       </section>
 
       {showQuotaExceededModal && (

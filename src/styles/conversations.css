@@ -268,3 +268,56 @@
     flex: 1 1 45%;
   }
 }
+
+/* Mobile (Android app feel) */
+@media (max-width: 767px) {
+  .tw-conv-page {
+    padding: 0 0 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .tw-conv-overview {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-conv-overview-box {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tw-conv-overview-val {
+    font-size: 1rem;
+  }
+
+  .tw-conv-overview-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-conv-table-wrap {
+    padding: 0.75rem 1rem;
+  }
+
+  .tw-conv-table-title {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-conv-th {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.5625rem;
+  }
+
+  .tw-conv-td {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .tw-conv-td--topic {
+    max-width: 180px;
+  }
+
+  .tw-conv-badge {
+    font-size: 0.625rem;
+    padding: 2px 6px;
+  }
+}

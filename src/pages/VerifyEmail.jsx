@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { verifyEmailOtp, resendEmailOtp } from '../services/api';
 import { loginUser } from '../store/slices/authSlice';
+import AuthLogo from '../components/AuthLogo';
 
 export default function VerifyEmail() {
   const location = useLocation();
@@ -71,7 +72,9 @@ export default function VerifyEmail() {
     <div className="auth-page auth-page-otp">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="auth-logo-circle">ai</div>
+          <div className="auth-logo-wrap">
+            <AuthLogo className="auth-logo-icon" />
+          </div>
           <div className="auth-brand-text">
             <span className="auth-brand-name">articulate.ai</span>
             <span className="auth-brand-sub">Voice communication coach</span>

@@ -493,3 +493,122 @@
   color: #4ade80;
   font-weight: 500;
 }
+
+/* Mobile (Android app feel) */
+@media (max-width: 767px) {
+  .tw-detail-page {
+    padding-bottom: 1.5rem;
+  }
+
+  .tw-detail-main {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0 1rem;
+  }
+
+  .tw-detail-nav {
+    height: auto;
+    min-height: 56px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tw-detail-nav-title {
+    font-size: 0.9375rem;
+  }
+
+  .tw-detail-nav-meta {
+    font-size: 0.75rem;
+  }
+
+  .tw-detail-nav-back {
+    font-size: 0.8125rem;
+  }
+
+  .tw-detail-section {
+    margin-bottom: 1rem;
+  }
+
+  .tw-detail-section-title {
+    font-size: 0.6875rem;
+  }
+
+  .tw-detail-section-desc {
+    font-size: 0.8125rem;
+  }
+
+  .tw-detail-stat {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tw-detail-stat-value {
+    font-size: 1rem;
+  }
+
+  .tw-detail-stat-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-detail-stat-hint {
+    font-size: 0.6875rem;
+  }
+
+  .tw-detail-card {
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-detail-card-title {
+    font-size: 0.6875rem;
+  }
+
+  .tw-detail-filler-list li {
+    font-size: 0.8125rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .tw-detail-feedback {
+    font-size: 0.875rem;
+  }
+
+  .tw-detail-msg {
+    padding: 0.75rem 1rem;
+  }
+
+  .tw-detail-msg-role {
+    font-size: 0.5625rem;
+  }
+
+  .tw-detail-msg-content {
+    font-size: 0.875rem;
+  }
+
+  .tw-detail-action-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .tw-detail-modal-overlay {
+    padding: 1rem;
+  }
+
+  .tw-detail-modal {
+    max-width: 100%;
+  }
+
+  .tw-detail-modal-header {
+    padding: 1rem 1rem;
+  }
+
+  .tw-detail-modal-title {
+    font-size: 1rem;
+  }
+
+  .tw-detail-modal-body {
+    padding: 1rem;
+  }
+
+  .tw-detail-modal-text {
+    font-size: 0.875rem;
+  }
+}

@@ -25,6 +25,13 @@ const LEVEL_OPTIONS = [
   { value: 'advanced', label: 'Advanced' },
 ];
 
+const EXAMPLE_INTERESTS = [
+  'Technology', 'Coding', 'AI', 'Startups', 'Leadership', 'Management',
+  'Sports', 'Cricket', 'Football', 'Fitness', 'Music', 'Travel',
+  'Books', 'Writing', 'Public speaking', 'Networking', 'Sales',
+  'Interview prep', 'Career growth', 'Psychology', 'Finance',
+];
+
 const LABELS = {
   profession: 'Profession',
   goal: 'Goal',
@@ -136,6 +143,16 @@ export default function Profile() {
     setError(null);
   };
 
+  const addInterest = (interest) => {
+    const current = (form.interests_text || '').trim();
+    const parts = current ? current.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const lower = interest.toLowerCase();
+    if (parts.some((p) => p.toLowerCase() === lower)) return;
+    const next = parts.length ? [...parts, interest].join(', ') : interest;
+    setForm((prev) => ({ ...prev, interests_text: next }));
+    setError(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const interests = (form.interests_text || '').trim();
@@ -216,7 +233,6 @@ export default function Profile() {
         average_filler_words: profile.average_filler_words ?? 0,
         average_pace_wpm: profile.average_pace_wpm ?? 0,
         confidence_score: profile.confidence_score ?? 0,
-        clarity_score: profile.clarity_score ?? 0,
       }
     : null;
 
@@ -285,10 +301,6 @@ export default function Profile() {
             <div className="tw-profile-stat">
               <span className="tw-profile-stat-label">Confidence</span>
               <span className="tw-profile-stat-value">{stats.confidence_score}</span>
-            </div>
-            <div className="tw-profile-stat">
-              <span className="tw-profile-stat-label">Clarity</span>
-              <span className="tw-profile-stat-value">{stats.clarity_score}</span>
             </div>
           </div>
         </section>
@@ -379,30 +391,52 @@ export default function Profile() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="tw-modal-body">
-              <label className="tw-modal-label">Profession</label>
+              <label className="tw-modal-label"><span className="tw-required-star">*</span> Profession</label>
               <select name="profession" value={form.profession} onChange={handleChange} className="tw-modal-field tw-modal-field-select">
                 {PROFESSION_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
 
-              <label className="tw-modal-label">Goal</label>
+              <label className="tw-modal-label"><span className="tw-required-star">*</span> Goal</label>
               <select name="goal" value={form.goal} onChange={handleChange} className="tw-modal-field tw-modal-field-select">
                 {GOAL_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
 
-              <label className="tw-modal-label">Communication level</label>
+              <label className="tw-modal-label"><span className="tw-required-star">*</span> Communication level</label>
               <select name="communication_level" value={form.communication_level} onChange={handleChange} className="tw-modal-field tw-modal-field-select">
                 {LEVEL_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
 
-              <label className="tw-modal-label">Interests <span className="tw-required">(required)</span></label>
-              <p className="tw-modal-helper">Add as many interests as possible for personalized practice topics.</p>
-              <input type="text" name="interests_text" value={form.interests_text} onChange={handleChange} className="tw-modal-field" placeholder="e.g. cricket, music, coding, relationships" required />
+              <div className="tw-interests-field">
+                <label className="tw-modal-label"><span className="tw-required-star">*</span> Interests</label>
+                <p className="tw-modal-helper">Add as many interests as possible for personalized practice topics. Click suggestions below or type your own.</p>
+                <input type="text" name="interests_text" value={form.interests_text} onChange={handleChange} className="tw-modal-field tw-interests-input" placeholder="e.g. cricket, music, coding, relationships" required />
+                <div className="tw-interests-suggestions">
+                  <span className="tw-interests-suggestions-label">Click to add:</span>
+                  <div className="tw-interests-chips">
+                    {EXAMPLE_INTERESTS.map((item) => {
+                      const current = (form.interests_text || '').split(',').map((s) => s.trim().toLowerCase());
+                      const isAdded = current.includes(item.toLowerCase());
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          className={`tw-interest-chip ${isAdded ? 'tw-interest-chip--added' : ''}`}
+                          onClick={() => addInterest(item)}
+                          disabled={isAdded}
+                        >
+                          {isAdded ? '✓ ' : ''}{item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
 
               <label className="tw-modal-label">Bio (optional)</label>
               <textarea name="bio" value={form.bio} onChange={handleChange} className="tw-modal-field tw-modal-textarea" placeholder="What you'd like to improve…" rows={3} />
@@ -411,7 +445,7 @@ export default function Profile() {
 
               <div className="tw-modal-actions">
                 <button type="button" className="tw-btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
-                <button type="submit" className="tw-btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                <button type="submit" className="tw-btn-primary" disabled={saving || !(form.interests_text || '').trim()}>{saving ? 'Saving…' : 'Save'}</button>
               </div>
             </form>
           </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
+import AuthLogo from '../components/AuthLogo';
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -56,7 +57,9 @@ export default function Signup() {
         <div className="auth-card-header">
           <div>
             <div className="auth-brand">
-              <div className="auth-logo-circle">ai</div>
+              <div className="auth-logo-wrap">
+                <AuthLogo className="auth-logo-icon" />
+              </div>
               <div className="auth-brand-text">
                 <span className="auth-brand-name">articulate.ai</span>
                 <span className="auth-brand-sub">Voice communication coach</span>

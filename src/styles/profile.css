@@ -281,14 +281,43 @@
   margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+  max-width: 100%;
+}
+
+.tw-profile-setup-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .tw-profile-setup-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tw-profile-setup-field {
+  display: flex;
+  flex-direction: column;
   gap: 0.25rem;
-  max-width: 720px;
+}
+
+.tw-profile-setup-field .tw-modal-field,
+.tw-profile-setup-field .tw-modal-field-select,
+.tw-profile-setup-field .tw-modal-textarea {
+  margin-bottom: 0;
 }
 
 .tw-profile-setup-form .tw-modal-field,
 .tw-profile-setup-form .tw-modal-field-select,
 .tw-profile-setup-form .tw-modal-textarea {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
+}
+
+.tw-modal-textarea-compact {
+  min-height: 4rem;
+  resize: vertical;
 }
 
 .tw-modal-field-select {
@@ -556,13 +585,80 @@
 
 .tw-modal-helper {
   font-size: 0.8125rem;
-  color: var(--color-slate-500);
-  margin: -0.25rem 0 0.5rem 0;
+  color: var(--text-dim);
+  margin: 0.25rem 0 0.5rem 0;
   line-height: 1.4;
+}
+
+/* Interests field with clickable chips - chips above input */
+.tw-interests-field {
+  margin-bottom: 0;
+}
+
+.tw-interests-field .tw-modal-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.tw-interests-field .tw-modal-helper {
+  margin: 0.25rem 0 0.5rem 0;
+}
+
+.tw-interests-suggestions {
+  margin-bottom: 0.5rem;
+}
+
+.tw-interests-input {
+  margin-bottom: 0 !important;
+}
+
+.tw-interests-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tw-interest-chip {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  background: var(--input-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.tw-interest-chip:hover:not(:disabled) {
+  background: #2A2A2A;
+  color: var(--accent);
+}
+
+.tw-interest-chip--added {
+  background: rgba(167, 237, 2, 0.2);
+  color: var(--accent);
+  cursor: default;
+}
+
+[data-theme="light"] .tw-interest-chip--added {
+  background: rgba(5, 150, 105, 0.15);
+  color: var(--accent);
+}
+
+[data-theme="light"] .tw-interest-chip:hover:not(:disabled) {
+  background: #E5E5E5;
+  color: var(--accent);
 }
 
 .tw-required {
   color: var(--accent);
+  font-weight: 400;
+}
+
+.tw-required-star {
+  color: #EF4444;
   font-weight: 400;
 }
 
@@ -571,7 +667,7 @@
   padding: 0.625rem 1rem;
   font-size: 0.9375rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 4px;
   margin-bottom: 1rem;
   font-family: inherit;
   background: var(--input-bg);
@@ -636,4 +732,112 @@
   margin-top: 0.5rem;
   font-size: 0.875rem;
   color: #dc2626;
+}
+
+/* Mobile (Android app feel) */
+@media (max-width: 767px) {
+  .tw-profile-page {
+    padding: 0.75rem 0 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .tw-profile-title {
+    font-size: 1.125rem;
+  }
+
+  .tw-profile-card {
+    padding: 1rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .tw-profile-plan-name {
+    font-size: 0.875rem;
+  }
+
+  .tw-profile-plan-price {
+    font-size: 0.8125rem;
+  }
+
+  .tw-profile-plan-desc {
+    font-size: 0.75rem;
+  }
+
+  .tw-profile-plan-meta {
+    font-size: 0.6875rem;
+  }
+
+  .tw-profile-plan-btn {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .tw-profile-plans-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .tw-profile-plan-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .tw-profile-stats-grid {
+    gap: 0.5rem;
+  }
+
+  .tw-profile-stat {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tw-profile-stat-value {
+    font-size: 1rem;
+  }
+
+  .tw-profile-stat-label {
+    font-size: 0.5625rem;
+  }
+
+  .tw-modal {
+    max-width: calc(100vw - 2rem);
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
+  .tw-modal-header {
+    padding: 1rem 1rem 0.75rem;
+  }
+
+  .tw-modal-title {
+    font-size: 1rem;
+  }
+
+  .tw-modal-body {
+    padding: 1rem;
+  }
+
+  .tw-modal-label {
+    font-size: 0.75rem;
+  }
+
+  .tw-modal-field {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .tw-modal-actions {
+    margin-top: 1rem;
+    gap: 0.5rem;
+  }
+
+  .tw-profile-setup-row {
+    flex-direction: column;
+  }
+
+  .tw-profile-setup-field {
+    width: 100%;
+  }
+
+  .tw-interest-chip {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.6875rem;
+  }
 }

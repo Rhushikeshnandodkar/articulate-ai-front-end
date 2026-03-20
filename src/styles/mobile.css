@@ -1,0 +1,186 @@
+/* Mobile: reduce border-radius for less circular look */
+@media (max-width: 767px) {
+  /* Shared - sharper corners */
+  .tw-btn-primary,
+  .tw-btn-secondary {
+    border-radius: 2px;
+  }
+
+  .tw-input,
+  .tw-modal-field,
+  .tw-modal-field-select,
+  .tw-modal-textarea {
+    border-radius: 2px;
+  }
+
+  .tw-bottom-nav-link {
+    border-radius: 2px;
+  }
+
+  .tw-sidebar-close-btn,
+  .tw-page-navbar-menu-btn,
+  .tw-page-navbar-theme-btn,
+  .tw-page-navbar-logout-btn {
+    border-radius: 2px;
+  }
+
+  /* Auth - sharper corners */
+  .auth-card,
+  .auth-page-otp .auth-card {
+    border-radius: 2px;
+  }
+
+  .auth-field input,
+  .auth-label input {
+    border-radius: 2px;
+  }
+
+  .auth-primary-btn {
+    border-radius: 2px;
+  }
+
+  .auth-error {
+    border-radius: 2px;
+  }
+
+  /* Dashboard - sharper corners */
+  .tw-dashboard-card,
+  .tw-dashboard-topics-full,
+  .tw-dashboard-stats-bar,
+  .tw-dashboard-streak,
+  .tw-dashboard-quota,
+  .tw-dashboard-stat-box,
+  .tw-topic-card,
+  .tw-dashboard-goal-bar,
+  .tw-dashboard-goal-bar-fill {
+    border-radius: 2px;
+  }
+
+  .tw-dashboard-stat-box::before {
+    border-radius: 2px 2px 0 0;
+  }
+
+  .tw-dashboard-streak-day,
+  .tw-dashboard-streak-legend-dot {
+    border-radius: 2px;
+  }
+
+  .tw-dashboard-topics-arrow {
+    border-radius: 2px;
+  }
+
+  .tw-dashboard-quota-btn {
+    border-radius: 2px;
+  }
+
+  /* Profile - sharper corners */
+  .tw-profile-card,
+  .tw-profile-plan-card,
+  .tw-profile-plan-badge,
+  .tw-profile-stat,
+  .tw-modal,
+  .tw-modal-overlay .tw-modal {
+    border-radius: 2px;
+  }
+
+  .tw-interest-chip {
+    border-radius: 2px;
+  }
+
+  .tw-modal-actions .tw-btn-secondary {
+    border-radius: 2px;
+  }
+
+  /* Topics - sharper corners */
+  .tw-topics-filters-bar,
+  .tw-topics-filters,
+  .tw-topics-search,
+  .tw-topics-search-input,
+  .tw-topics-filter-select,
+  .tw-topics-card,
+  .tw-topics-card-tag,
+  .tw-topics-empty,
+  .tw-topics-empty-icon,
+  .tw-topics-count-badge {
+    border-radius: 2px;
+  }
+
+  .tw-topics-card-btn {
+    border-radius: 2px;
+  }
+
+  /* Conversations - sharper corners */
+  .tw-conv-overview-box,
+  .tw-conv-table-wrap,
+  .tw-conv-table {
+    border-radius: 2px;
+  }
+
+  .tw-conv-overview-box::before {
+    border-radius: 2px 2px 0 0;
+  }
+
+  .tw-conv-badge {
+    border-radius: 2px;
+  }
+
+  /* Conversation detail - sharper corners */
+  .tw-detail-stat,
+  .tw-detail-card,
+  .tw-detail-filler-list li,
+  .tw-detail-action-btn,
+  .tw-detail-modal,
+  .tw-detail-modal-close,
+  .tw-detail-modal-highlight,
+  .tw-detail-modal-summary {
+    border-radius: 2px;
+  }
+
+  /* Voice - sharper corners */
+  .tw-voice-stat-card,
+  .tw-voice-card,
+  .tw-voice-ai-display,
+  .tw-voice-user-display,
+  .tw-voice-btn-start,
+  .tw-voice-btn-pause,
+  .tw-voice-end-btn,
+  .tw-voice-leave-modal,
+  .tw-voice-leave-cancel,
+  .tw-voice-leave-danger,
+  .tw-voice-upgrade-modal,
+  .tw-voice-upgrade-plan-card,
+  .tw-voice-upgrade-skip {
+    border-radius: 2px;
+  }
+
+  .tw-voice-ai-display::before,
+  .tw-voice-stat-card--topic::before {
+    border-radius: 2px;
+  }
+
+  .tw-voice-wave-wrap {
+    border-radius: 2px;
+  }
+
+  /* Pill-shaped elements -> sharper */
+  .tw-nav-badge,
+  .tw-profile-plan-badge,
+  .tw-detail-modal-close,
+  .auth-password-toggle {
+    border-radius: 2px;
+  }
+
+  .tw-dashboard-goal-bar,
+  .tw-dashboard-goal-bar-fill {
+    border-radius: 2px;
+  }
+
+  .tw-dashboard-badge-icon {
+    border-radius: 2px;
+  }
+
+  .tw-profile-edit-btn,
+  .tw-profile-plan-btn {
+    border-radius: 4px;
+  }
+}

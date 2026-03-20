@@ -39,7 +39,7 @@ function LogoutIcon() {
   );
 }
 
-export default function PageNavbar({ planLabel = 'Free' }) {
+export default function PageNavbar({ planLabel = 'Free', onMenuClick }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,7 +60,21 @@ export default function PageNavbar({ planLabel = 'Free' }) {
   return (
     <header className="tw-page-navbar">
       <div className="tw-page-navbar-inner">
-        <h1 className="tw-page-navbar-title">{displayTitle}</h1>
+        <div className="tw-page-navbar-left">
+          {onMenuClick && (
+            <button
+              type="button"
+              onClick={onMenuClick}
+              className="tw-page-navbar-menu-btn"
+              aria-label="Open menu"
+            >
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+          <h1 className="tw-page-navbar-title">{displayTitle}</h1>
+        </div>
         <div className="tw-page-navbar-right">
           {rightActions}
           <span className="tw-page-navbar-badge">{planLabel} Plan</span>
