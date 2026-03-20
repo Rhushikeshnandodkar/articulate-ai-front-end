@@ -18,16 +18,26 @@ export async function login(username, password) {
 }
 
 export async function register(payload) {
-  const res = await fetch(`${API_BASE}/register/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/register/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'omit',
+      mode: 'cors',
+    });
+  } catch (err) {
+    throw { error: 'Network error. Check your connection and that the backend is reachable.' };
+  }
   let data;
   try {
     data = await res.json();
   } catch (_) {
     if (res.ok || res.status === 201) return { success: true };
+    if (res.status === 0) {
+      throw { error: 'CORS error: backend must allow your frontend origin. Set CORS_ALLOWED_ORIGINS in production.' };
+    }
     throw { error: `Registration failed (${res.status})` };
   }
   if (!res.ok && res.status !== 201) throw data;
@@ -327,9 +337,16 @@ export async function getDailyTopic() {
   return data;
 }
 
-/** Get 3-5 personalized topic suggestions from LLM based on user profile. */
-export async function getSuggestedTopics() {
-  const res = await fetch(`${ARTICULATE_BASE}/suggested-topics/`, {
+/** Get 3-5 personalized topic suggestions from LLM based on user profile.
+ * @param {string[]} [previousTitles] - Titles of topics already shown; LLM will suggest NEW ones to avoid repeats on refresh.
+ */
+export async function getSuggestedTopics(previousTitles = []) {
+  const params = new URLSearchParams();
+  if (Array.isArray(previousTitles) && previousTitles.length > 0) {
+    params.set('previous_titles', previousTitles.join('|'));
+  }
+  const url = params.toString() ? `${ARTICULATE_BASE}/suggested-topics/?${params}` : `${ARTICULATE_BASE}/suggested-topics/`;
+  const res = await fetch(url, {
     headers: getAuthHeaders(),
   });
   const data = await res.json();

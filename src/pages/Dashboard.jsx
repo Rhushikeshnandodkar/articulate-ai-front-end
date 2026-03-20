@@ -245,7 +245,8 @@ export default function Dashboard() {
     if (!isAuthenticated) return;
     setTopicsLoading(true);
     setTopicsRefreshing(true);
-    getSuggestedTopics()
+    const previousTitles = recommendedTopics.map((t) => (typeof t === 'string' ? t : t.title || t.name || '')).filter(Boolean);
+    getSuggestedTopics(previousTitles)
       .then((data) => {
         if (data.topics && data.topics.length > 0) {
           const normalized = data.topics.map((t) => {
