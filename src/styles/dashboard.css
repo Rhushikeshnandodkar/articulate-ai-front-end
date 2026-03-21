@@ -1106,6 +1106,12 @@
   flex-shrink: 0;
 }
 
+.tw-quota-ring-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .tw-quota-ring-text {
   position: absolute;
   inset: 0;
@@ -1113,7 +1119,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  line-height: 1.2;
+  text-align: center;
+  padding: 4px;
 }
 
 .tw-quota-ring-value {
@@ -1175,6 +1183,7 @@
   .tw-dashboard-quota {
     flex-direction: column;
     text-align: center;
+    align-items: center;
   }
   .tw-dashboard-quota-btn {
     width: 100%;
@@ -1357,10 +1366,26 @@
   .tw-quota-ring-wrap {
     width: 80px;
     height: 80px;
+    margin: 0 auto;
+  }
+
+  .tw-quota-ring-text {
+    padding: 2px;
   }
 
   .tw-quota-ring-value {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .tw-quota-ring-of {
+    font-size: 0.6rem;
+    margin-top: 2px;
+  }
+
+  .tw-quota-ring-unit {
+    font-size: 0.5rem;
+    margin-top: 1px;
   }
 
   .tw-dashboard-quota-title {

@@ -68,9 +68,28 @@
 
 .tw-detail-section-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.tw-detail-section-head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tw-detail-section-topic {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.tw-detail-section-topic-standalone {
+  margin-bottom: 0.5rem;
 }
 
 .tw-detail-section-title {
@@ -502,8 +521,27 @@
 
   .tw-detail-main {
     width: 100%;
+    max-width: 100%;
     margin-top: 0.75rem;
-    padding: 0 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0;
+  }
+
+  .tw-detail-section-head {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .tw-detail-section-head-left {
+    width: 100%;
+  }
+
+  .tw-detail-section-topic,
+  .tw-detail-section-topic-standalone {
+    font-size: 0.9375rem;
   }
 
   .tw-detail-nav {

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { getPlans } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
 import { Flame, Layers, Sparkles, FileText, Mic, BarChart3, Menu, X } from "lucide-react";
+import './Landing.css';
 
 const features = [
   {
@@ -400,21 +401,13 @@ Improve Your Communication Skills. <br />
                     <h3 className="text-base md:text-lg font-semibold">{plan.name}</h3>
 
                     <p className="mt-1 text-[#A7ED02] font-medium text-sm md:text-base">
-                      {priceLabel} / {plan.duration} days
+                      {priceLabel} / month
                     </p>
 
                     <div
-                      className="mt-2 md:mt-3 text-gray-400 text-xs md:text-sm"
+                      className="mt-3 md:mt-4 landing-plan-description"
                       dangerouslySetInnerHTML={{ __html: plan.description || '' }}
                     />
-
-                    {/* What’s included */}
-                    <div className="mt-3 md:mt-4">
-                      <p className="text-xs md:text-sm font-semibold mb-1">What’s included</p>
-                      <ul className="space-y-0.5 text-xs md:text-sm text-gray-300">
-                        <li>✔️ Includes {plan.limit_minutes} minutes of practice per month</li>
-                      </ul>
-                    </div>
                   </div>
 
                   {/* CTA */}

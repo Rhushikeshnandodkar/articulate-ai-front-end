@@ -123,7 +123,7 @@ function QuotaRing({ used, limit }) {
   else if (pct >= 50) color = '#f59e0b';
   return (
     <div className="tw-quota-ring-wrap">
-      <svg width="120" height="120" viewBox="0 0 120 120">
+      <svg className="tw-quota-ring-svg" viewBox="0 0 120 120">
         <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--ring-track)" strokeWidth="8" />
         <circle
           cx="60" cy="60" r={radius}

@@ -404,41 +404,6 @@ export default function VoiceChat() {
   return (
     <div className="tw-voice-page">
       <div className="tw-voice-body">
-        <aside className="tw-voice-sidebar">
-          <h2 className="tw-voice-sidebar-title">Session Stats</h2>
-
-          <div className="tw-voice-stat-card tw-voice-stat-card--topic">
-            <p className="tw-voice-stat-label">Current Topic</p>
-            <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
-          </div>
-
-          <div className="tw-voice-stat-card">
-            <p className="tw-voice-stat-label">Time Elapsed</p>
-            <div className="tw-voice-stat-row">
-              <p className="tw-voice-stat-value">{elapsedDisplay}</p>
-              <span className="tw-voice-stat-icon" style={{ background: 'rgba(30, 58, 138, 0.15)', color: 'var(--accent)' }}><ClockIcon /></span>
-            </div>
-            <div className="tw-voice-stat-bar">
-              <div className="tw-voice-stat-bar-fill" style={{ width: `${Math.min(100, (elapsedSeconds / 60) * 5)}%` }} />
-            </div>
-          </div>
-
-          <div className="tw-voice-stat-card">
-            <p className="tw-voice-stat-label">Session Progress</p>
-            <div className="tw-voice-stat-row">
-              <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
-            </div>
-            <div className="tw-voice-stat-bar">
-              <div className="tw-voice-stat-bar-fill" style={{ width: `${sessionProgress}%`, background: 'var(--accent)' }} />
-            </div>
-          </div>
-
-          <div className="tw-voice-stat-card">
-            <p className="tw-voice-stat-label">Turns</p>
-            <p className="tw-voice-stat-value">{transcriptLines.filter(l => l.role === 'user').length}</p>
-          </div>
-        </aside>
-
         <main className="tw-voice-main">
           {/* Single unified card */}
           <section className="tw-voice-card tw-voice-card--unified">
@@ -446,7 +411,7 @@ export default function VoiceChat() {
             <div className={`tw-voice-ai-display ${isAiSpeaking ? 'tw-voice-ai-display--speaking' : ''}`}>
               <div className="tw-voice-ai-display-label">
                 <span className={`tw-voice-ai-dot ${isAiSpeaking ? 'tw-voice-ai-dot--active' : ''}`} />
-                {isAiSpeaking ? 'AI is speaking…' : isProcessing ? 'AI is thinking…' : 'AI Coach'}
+                {isAiSpeaking ? 'AI is speaking…' : isProcessing ? 'AI is thinking…' : 'AI Partner'}
               </div>
               <p className="tw-voice-ai-display-text">
                 {isProcessing
@@ -521,6 +486,42 @@ export default function VoiceChat() {
             )}
           </section>
         </main>
+
+        <aside className="tw-voice-sidebar">
+          <h2 className="tw-voice-sidebar-title">Session Stats</h2>
+          <div className="tw-voice-stats-grid">
+            <div className="tw-voice-stat-card tw-voice-stat-card--topic">
+              <p className="tw-voice-stat-label">Current Topic</p>
+              <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
+            </div>
+
+            <div className="tw-voice-stat-card">
+              <p className="tw-voice-stat-label">Time Elapsed</p>
+              <div className="tw-voice-stat-row">
+                <p className="tw-voice-stat-value">{elapsedDisplay}</p>
+                <span className="tw-voice-stat-icon" style={{ background: 'rgba(30, 58, 138, 0.15)', color: 'var(--accent)' }}><ClockIcon /></span>
+              </div>
+              <div className="tw-voice-stat-bar">
+                <div className="tw-voice-stat-bar-fill" style={{ width: `${Math.min(100, (elapsedSeconds / 60) * 5)}%` }} />
+              </div>
+            </div>
+
+            <div className="tw-voice-stat-card">
+              <p className="tw-voice-stat-label">Session Progress</p>
+              <div className="tw-voice-stat-row">
+                <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
+              </div>
+              <div className="tw-voice-stat-bar">
+                <div className="tw-voice-stat-bar-fill" style={{ width: `${sessionProgress}%`, background: 'var(--accent)' }} />
+              </div>
+            </div>
+
+            <div className="tw-voice-stat-card">
+              <p className="tw-voice-stat-label">Turns</p>
+              <p className="tw-voice-stat-value">{transcriptLines.filter(l => l.role === 'user').length}</p>
+            </div>
+          </div>
+        </aside>
       </div>
 
       {showEndConfirm && (

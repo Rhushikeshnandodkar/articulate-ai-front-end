@@ -25,6 +25,17 @@
   overflow-y: auto;
   border-right: none;
   background: transparent;
+  order: -1; /* Desktop: show sidebar on left */
+}
+
+.tw-voice-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tw-voice-stats-grid .tw-voice-stat-card {
+  margin-bottom: 0;
 }
 
 .tw-voice-sidebar-title {
@@ -691,21 +702,32 @@
 @media (max-width: 768px) {
   .tw-voice-body {
     flex-direction: column;
-  }
-  .tw-voice-sidebar {
-    width: 100%;
-    padding: 1rem;
-    flex-direction: row;
-    display: flex;
-    gap: 0.5rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-  .tw-voice-stat-card {
-    min-width: 150px;
+    overflow-y: auto;
+    align-items: center;
   }
   .tw-voice-main {
+    order: 0;
+    flex-shrink: 0;
     padding: 1rem;
+    width: 95%;
+    max-width: 95%;
+  }
+  .tw-voice-sidebar {
+    order: 1;
+    width: 95%;
+    max-width: 95%;
+    padding: 1rem;
+    display: block;
+    overflow: visible;
+  }
+  .tw-voice-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .tw-voice-stat-card {
+    min-width: 0;
+    margin-bottom: 0;
   }
 }
 
@@ -717,7 +739,6 @@
 
   .tw-voice-sidebar {
     padding: 0.75rem 1rem;
-    flex-shrink: 0;
   }
 
   .tw-voice-sidebar-title {
@@ -725,8 +746,11 @@
     margin-bottom: 0.5rem;
   }
 
+  .tw-voice-stats-grid {
+    gap: 0.5rem;
+  }
+
   .tw-voice-stat-card {
-    min-width: 120px;
     padding: 0.75rem 1rem;
   }
 

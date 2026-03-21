@@ -86,15 +86,9 @@ export default function ConversationDetail() {
   }, [modal]);
 
   useEffect(() => {
-    const title = conv?.topic || 'Conversation';
-    const backLink = (
-      <Link to="/dashboard" className="tw-detail-nav-back">
-        ← Back to dashboard
-      </Link>
-    );
-    setPageNavbar({ title, rightActions: backLink });
+    setPageNavbar({ title: 'Report' });
     return () => setPageNavbar({});
-  }, [conv?.topic, setPageNavbar]);
+  }, [setPageNavbar]);
 
   if (loading) {
     return (
@@ -132,7 +126,12 @@ export default function ConversationDetail() {
       {hasStats && (
         <section className="tw-detail-section">
           <div className="tw-detail-section-head">
-            <h2 className="tw-detail-section-title">Session stats</h2>
+            <div className="tw-detail-section-head-left">
+              {conv.topic && (
+                <h2 className="tw-detail-section-topic">{conv.topic}</h2>
+              )}
+              <h3 className="tw-detail-section-title">Session stats</h3>
+            </div>
             {startedLabel && (
               <p className="tw-detail-section-date">
                 {startedLabel && !endedLabel && `Practiced on ${startedLabel}`}
@@ -254,6 +253,9 @@ export default function ConversationDetail() {
       )}
 
       <section className="tw-detail-section">
+        {!hasStats && conv.topic && (
+          <h2 className="tw-detail-section-topic tw-detail-section-topic-standalone">{conv.topic}</h2>
+        )}
         <h2 className="tw-detail-section-title">Transcript</h2>
         <p className="tw-detail-section-desc">Click “Make better” or “Grammar check” on your messages to get suggestions.</p>
         {conv.messages && conv.messages.length > 0 ? (

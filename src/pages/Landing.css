@@ -89,6 +89,55 @@
   margin: 0 0 2rem;
 }
 
+/* Plan description HTML from backend - clear hierarchy */
+.landing-plan-description {
+  color: #9CA3AF;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.landing-plan-description p {
+  margin: 0 0 0.75rem;
+  color: #D1D5DB;
+  font-size: 0.8125rem;
+}
+
+.landing-plan-description h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #F3F4F6;
+}
+
+.landing-plan-description ul {
+  margin: 0.5rem 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.landing-plan-description ul li {
+  margin-bottom: 0.5rem;
+  padding-left: 0;
+  color: #D1D5DB;
+  font-size: 0.8125rem;
+}
+
+.landing-plan-description ul li:last-child {
+  margin-bottom: 0;
+}
+
+@media (min-width: 768px) {
+  .landing-plan-description,
+  .landing-plan-description p,
+  .landing-plan-description ul li {
+    font-size: 0.875rem;
+  }
+
+  .landing-plan-description h3 {
+    font-size: 0.9375rem;
+  }
+}
+
 .landing-actions {
   display: flex;
   flex-direction: column;

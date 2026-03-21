@@ -1,4 +1,3 @@
-import '../styles/profile.css';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProfile, updateProfile } from '../services/api';
@@ -105,127 +104,180 @@ export default function ProfileSetup() {
 
   if (loading) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <p className="tw-muted">Loading profile setup…</p>
+      <div className="min-h-screen bg-[rgb(10,10,10)] text-white flex items-center justify-center px-6 py-10">
+        <div className="w-full max-w-3xl bg-[rgb(26,26,26)] border border-white/10 rounded-2xl p-8 shadow-xl">
+          <p className="text-gray-400 text-center">Loading profile setup…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="auth-page auth-page-setup">
-      <div className="auth-card auth-card-wide">
-        <div className="auth-card-header">
-          <div>
-            <div className="auth-brand">
-              <div className="auth-logo-wrap">
-                <AuthLogo className="auth-logo-icon" />
-              </div>
-              <div className="auth-brand-text">
-                <span className="auth-brand-name">articulate.ai</span>
-                <span className="auth-brand-sub">Voice communication coach</span>
-              </div>
+    <div className="min-h-screen bg-[rgb(10,10,10)] text-white flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-3xl bg-[rgb(26,26,26)] border border-white/10 rounded-2xl p-8 shadow-xl">
+        {/* HEADER */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3">
+            <AuthLogo className="w-8 h-8 text-primary" />
+            <div>
+              <p className="text-lg font-semibold">
+                articulate<span className="text-primary">.ai</span>
+              </p>
+              <p className="text-xs text-gray-400">
+                Voice communication coach
+              </p>
             </div>
-            <h1 className="auth-card-title">Set up your profile</h1>
-            <p className="auth-card-subtitle">
-              Tell us a bit about you so we can personalize your practice.
-            </p>
           </div>
+
+          <h1 className="mt-6 text-2xl font-bold">
+            Set up your profile
+          </h1>
+
+          <p className="text-gray-400 text-sm mt-2">
+            Tell us a bit about you so we can personalize your practice.
+          </p>
         </div>
 
-        {error && <p className="tw-error">{error}</p>}
-        <form onSubmit={handleSubmit} className="tw-profile-setup-form">
-          <div className="tw-profile-setup-row">
-            <div className="tw-profile-setup-field">
-              <label className="tw-modal-label"><span className="tw-required-star">*</span> Profession</label>
+        {/* ERROR */}
+        {error && (
+          <p className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-md">
+            {error}
+          </p>
+        )}
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ROW */}
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* PROFESSION */}
+            <div>
+              <label className="text-sm text-gray-300">
+                <span className="text-red-400">*</span> Profession
+              </label>
               <select
                 name="profession"
                 value={form.profession}
                 onChange={handleChange}
-                className="tw-modal-field tw-modal-field-select"
+                className="w-full mt-1 bg-[rgb(26,26,26)] border border-white/10 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none text-white"
               >
                 {PROFESSION_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
-            <div className="tw-profile-setup-field">
-              <label className="tw-modal-label"><span className="tw-required-star">*</span> Goal</label>
+
+            {/* GOAL */}
+            <div>
+              <label className="text-sm text-gray-300">
+                <span className="text-red-400">*</span> Goal
+              </label>
               <select
                 name="goal"
                 value={form.goal}
                 onChange={handleChange}
-                className="tw-modal-field tw-modal-field-select"
+                className="w-full mt-1 bg-[rgb(26,26,26)] border border-white/10 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none text-white"
               >
                 {GOAL_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
-            <div className="tw-profile-setup-field">
-              <label className="tw-modal-label"><span className="tw-required-star">*</span> Level</label>
+
+            {/* LEVEL */}
+            <div>
+              <label className="text-sm text-gray-300">
+                <span className="text-red-400">*</span> Level
+              </label>
               <select
                 name="communication_level"
                 value={form.communication_level}
                 onChange={handleChange}
-                className="tw-modal-field tw-modal-field-select"
+                className="w-full mt-1 bg-[rgb(26,26,26)] border border-white/10 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none text-white"
               >
                 {LEVEL_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div className="tw-profile-setup-field">
-            <label className="tw-modal-label">Bio</label>
+          {/* BIO */}
+          <div>
+            <label className="text-sm text-gray-300">Bio</label>
             <textarea
               name="bio"
               value={form.bio}
               onChange={handleChange}
-              className="tw-modal-field tw-modal-textarea tw-modal-textarea-compact"
               placeholder="Tell us a bit about your background and what you want to improve."
-              rows={2}
+              rows={3}
+              className="w-full mt-1 bg-[rgb(26,26,26)] border border-white/10 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none text-white placeholder-gray-500"
             />
           </div>
 
-          <div className="tw-interests-field">
-            <label className="tw-modal-label"><span className="tw-required-star">*</span> Interests</label>
-            <p className="tw-modal-helper">Click to add or type your own below.</p>
-            <div className="tw-interests-suggestions">
-              <div className="tw-interests-chips">
-                {EXAMPLE_INTERESTS.map((item) => {
-                  const current = (form.interests_text || '').split(',').map((s) => s.trim().toLowerCase());
-                  const isAdded = current.includes(item.toLowerCase());
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      className={`tw-interest-chip ${isAdded ? 'tw-interest-chip--added' : ''}`}
-                      onClick={() => addInterest(item)}
-                      disabled={isAdded}
-                    >
-                      {isAdded ? '✓ ' : ''}{item}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* INTERESTS */}
+          <div>
+            <label className="text-sm text-gray-300">
+              <span className="text-red-400">*</span> Interests
+            </label>
+
+            <p className="text-xs text-gray-500 mt-1">
+              Click to add or type your own below.
+            </p>
+
+            {/* CHIPS */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {EXAMPLE_INTERESTS.map((item) => {
+                const current = (form.interests_text || "")
+                  .split(",")
+                  .map((s) => s.trim().toLowerCase());
+                const isAdded = current.includes(item.toLowerCase());
+
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => addInterest(item)}
+                    disabled={isAdded}
+                    className={`px-3 py-1 text-xs rounded-full border transition
+                      ${
+                        isAdded
+                          ? "bg-primary/20 text-primary border-primary/30"
+                          : "bg-[rgb(26,26,26)] text-gray-300 border-white/10 hover:bg-[rgb(35,35,35)]"
+                      }`}
+                  >
+                    {isAdded ? "✓ " : ""}
+                    {item}
+                  </button>
+                );
+              })}
             </div>
+
+            {/* INPUT */}
             <input
               type="text"
               name="interests_text"
               value={form.interests_text}
               onChange={handleChange}
-              className="tw-modal-field tw-interests-input"
               placeholder="e.g. cricket, music, coding, relationships"
               required
+              className="w-full mt-4 bg-[rgb(26,26,26)] border border-white/10 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none text-white placeholder-gray-500"
             />
           </div>
 
-          <div className="tw-modal-actions">
-            <button type="submit" className="tw-btn-primary" disabled={saving || !(form.interests_text || '').trim()}>
-              {saving ? 'Saving…' : 'Continue'}
+          {/* BUTTON */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={saving || !(form.interests_text || "").trim()}
+              className="w-full bg-primary hover:bg-primary/90 text-slate py-3 rounded-md font-medium transition disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Continue"}
             </button>
           </div>
         </form>
@@ -233,4 +285,3 @@ export default function ProfileSetup() {
     </div>
   );
 }
-

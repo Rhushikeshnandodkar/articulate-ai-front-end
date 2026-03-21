@@ -8,7 +8,6 @@ import AuthLogo from '../components/AuthLogo';
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
@@ -39,75 +38,93 @@ export default function Login() {
     }
   };
 
+  const formatError = (err) => {
+    if (!err) return '';
+    if (typeof err === 'string') return err;
+    if (Array.isArray(err)) return err.join(' ');
+    if (typeof err === 'object') {
+      return Object.entries(err)
+        .map(([k, v]) => (Array.isArray(v) ? v.join(', ') : v))
+        .join(' ');
+    }
+    return String(err);
+  };
+
   return (
-    <div className="auth-page min-h-screen flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="auth-card w-full max-w-md md:max-w-xl rounded-2xl overflow-hidden border border-white/20 backdrop-blur-2xl bg-gray-900/40 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]">
-        <div className="auth-card-header">
-          <div className="space-y-1">
-            <div className="auth-brand flex items-center gap-3">
-              <div className="auth-logo-wrap flex-shrink-0 ring-2 ring-[#A7ED02]/30 rounded-lg">
-                <AuthLogo className="auth-logo-icon" />
-              </div>
-              <div className="auth-brand-text">
-            <span className="auth-brand-name text-base md:text-lg font-bold tracking-tight">articulate.ai</span>
-            <span className="auth-brand-sub text-[0.625rem] md:text-xs block mt-0.5">Voice communication coach</span>
-              </div>
+    <div className="min-h-screen bg-[rgb(10,10,10)] text-white flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-md bg-[rgb(26,26,26)] border border-white/10 rounded-lg md:rounded-2xl p-8 shadow-xl backdrop-blur-sm">
+        {/* LOGO */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <AuthLogo className="w-8 h-8 text-primary" />
+          <span className="text-xl font-semibold">
+            articulate<span className="text-primary">.ai</span>
+          </span>
+        </div>
+
+        {/* HEADING */}
+        <h2 className="text-2xl font-bold text-center">
+          Welcome back
+        </h2>
+
+        <p className="text-gray-400 text-sm text-center mt-2">
+          Sign in to continue your practice
+        </p>
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {error && (
+            <div className="p-3 rounded md:rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {formatError(error)}
             </div>
-            <h1 className="auth-card-title text-xl md:text-2xl font-bold tracking-tight mt-4">Welcome back</h1>
-            <p className="auth-card-subtitle text-xs md:text-sm">Sign in to continue your practice.</p>
-          </div>
-        </div>
-        <form onSubmit={handleSubmit} className="auth-form">
-        {error && (
-          <div className="auth-error rounded-lg text-sm">
-            {Array.isArray(error) ? error.join(' ') : typeof error === 'object' ? JSON.stringify(error) : String(error)}
-          </div>
-        )}
-        <div className="auth-field">
-          <label htmlFor="login-username" className="text-xs md:text-sm font-medium">Username</label>
-          <input
-            id="login-username"
-            type="text"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            autoComplete="username"
-            className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
-          />
-        </div>
-        <div className="auth-field">
-          <label htmlFor="login-password" className="text-xs md:text-sm font-medium">Password</label>
-          <div className="auth-field-input-wrap">
+          )}
+
+          {/* USERNAME */}
+          <div>
+            <label className="text-sm text-gray-300">Username</label>
             <input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
+              type="text"
+              name="username"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoComplete="username"
+              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
+            />
+          </div>
+
+          {/* PASSWORD */}
+          <div>
+            <label className="text-sm text-gray-300">Password</label>
+            <input
+              type="password"
+              name="password"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
+              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
             />
-            <button
-              type="button"
-              className="auth-password-toggle"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? '🙈' : '👁'}
-            </button>
           </div>
-        </div>
-        <div className="auth-actions">
-          <button type="submit" className="auth-primary-btn rounded-lg font-semibold transition-all hover:opacity-95 active:scale-[0.99]" disabled={loading}>
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-4 bg-primary hover:bg-primary/90 text-slate font-medium py-3 rounded md:rounded-md transition"
+          >
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
-        </div>
-      </form>
-      <p className="text-center text-xs md:text-sm mt-5">
-        Don't have an account? <Link to="/signup" className="text-[#A7ED02] font-medium hover:underline">Sign up</Link>
-      </p>
+        </form>
+
+        {/* SIGNUP LINK */}
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-primary hover:text-secondary transition-colors font-medium hover:underline">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   );

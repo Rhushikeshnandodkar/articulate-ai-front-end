@@ -130,6 +130,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .tw-topics-section-title {
@@ -138,6 +139,52 @@
   color: var(--text);
   margin: 0;
   letter-spacing: -0.03em;
+}
+
+.tw-topics-section-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tw-topics-filter-btn {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+}
+
+.tw-topics-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tw-topics-filter-btn--active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tw-topics-clear-filters-btn {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.tw-topics-clear-filters-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .tw-topics-count-badge {
@@ -159,6 +206,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
+  align-items: stretch;
 }
 
 @media (min-width: 640px) {
@@ -182,6 +230,16 @@
   border-radius: 8px;
   padding: 1.25rem 1.5rem;
   border: none;
+  min-height: 0;
+}
+
+.tw-topics-card-bottom {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
 }
 
 [data-theme="light"] .tw-topics-card {
@@ -189,10 +247,6 @@
 }
 
 .tw-topics-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
@@ -290,12 +344,27 @@
   font-size: 0.8125rem;
   color: var(--text-dim);
   margin-bottom: 0.35rem;
+  min-height: 1.5em;
+}
+
+.tw-topics-card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tw-topics-card-meta .tw-topics-card-new,
+.tw-topics-card-meta .tw-topics-card-tag {
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .tw-topics-card-meta span {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  white-space: nowrap;
 }
 
 .tw-topics-card-status {
@@ -321,7 +390,6 @@
   border: none;
   cursor: pointer;
   font-family: inherit;
-  margin-top: auto;
 }
 
 .tw-topics-card-btn:not(:disabled) {
@@ -393,34 +461,37 @@
     margin-top: 0.5rem;
   }
 
-  /* Filters: stack vertically, cleaner layout */
+  /* Show filter button on phone */
+  .tw-topics-filter-btn {
+    display: flex;
+  }
+
+  /* Hide filters on phone by default, show when toggled */
   .tw-topics-filters-bar {
+    display: none;
     flex-direction: column;
     align-items: stretch;
     padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     gap: 0.75rem;
+  }
+
+  .tw-topics-filters-bar.tw-topics-filters-bar--mobile-visible {
+    display: flex;
   }
 
   .tw-topics-search-wrap {
     min-width: 0;
-    order: 1;
   }
 
   .tw-topics-filter-pills {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
-    order: 2;
-  }
-
-  .tw-topics-filter-pills:last-of-type {
-    margin-bottom: 0;
   }
 
   .tw-topics-filter-label {
     font-size: 0.6875rem;
-    margin-bottom: 0.25rem;
     margin-right: 0;
     display: block;
   }
@@ -437,12 +508,20 @@
     padding: 0.5rem 0.75rem 0.5rem 2.25rem;
   }
 
-  /* Section head - stack on mobile */
+  /* 2 cards per row on phone */
+  .tw-topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* Section head - keep row, wrap if needed */
   .tw-topics-section-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+    flex-wrap: wrap;
     margin-bottom: 1rem;
+  }
+
+  .tw-topics-section-head-right {
+    margin-left: auto;
   }
 
   .tw-topics-section-title {
@@ -454,12 +533,13 @@
     padding: 0.35rem 0.75rem;
   }
 
-  .tw-topics-grid {
-    gap: 0.75rem;
-  }
-
   .tw-topics-card {
     padding: 1rem 1rem;
+    border-radius: 4px;
+  }
+
+  .tw-topics-card-btn {
+    border-radius: 4px;
   }
 
   .tw-topics-card-title {
@@ -473,6 +553,18 @@
 
   .tw-topics-card-meta {
     font-size: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    min-height: 1.25em;
+  }
+
+  .tw-topics-card-meta-timer-tags {
+    width: 100%;
+  }
+
+  .tw-topics-card-meta-scores {
+    width: 100%;
   }
 
   .tw-topics-card-status {

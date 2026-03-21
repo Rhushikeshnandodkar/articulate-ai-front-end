@@ -28,6 +28,14 @@ function BookIcon() {
   );
 }
 
+function FilterIcon() {
+  return (
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+    </svg>
+  );
+}
+
 export default function Topics() {
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -50,6 +58,7 @@ export default function Topics() {
   const [showQuotaExceededModal, setShowQuotaExceededModal] = useState(false);
   const [upgradeUser, setUpgradeUser] = useState(null);
   const [upgradeSubmittingId, setUpgradeSubmittingId] = useState(null);
+  const [showFiltersOnMobile, setShowFiltersOnMobile] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -151,9 +160,18 @@ export default function Topics() {
     return 'tw-topics-card-tag--green';
   };
 
+  const hasActiveFilters = search.trim() !== '' || level !== 'all' || category !== 'all' || attemptFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearch('');
+    setLevel('all');
+    setCategory('all');
+    setAttemptFilter('all');
+  };
+
   return (
     <div className="tw-topics-page">
-      <div className="tw-topics-filters-bar">
+      <div className={`tw-topics-filters-bar ${showFiltersOnMobile ? 'tw-topics-filters-bar--mobile-visible' : ''}`}>
         <div className="tw-topics-search-wrap">
           <span className="tw-input-icon">
             <SearchIcon />
@@ -211,11 +229,31 @@ export default function Topics() {
 
       <div className="tw-topics-section-head">
         <h2 className="tw-topics-section-title">Choose your challenge</h2>
-        <span className="tw-topics-count-badge">
-          {isFreePlan
-            ? `${filtered.length} of 5 topics (upgrade for all ${topics.length})`
-            : `${filtered.length} of ${topics.length} challenges`}
-        </span>
+        <div className="tw-topics-section-head-right">
+          <span className="tw-topics-count-badge">
+            {isFreePlan
+              ? `${filtered.length} of 5 topics (upgrade for all ${topics.length})`
+              : `${filtered.length} of ${topics.length} challenges`}
+          </span>
+          <button
+            type="button"
+            className={`tw-topics-filter-btn ${showFiltersOnMobile ? 'tw-topics-filter-btn--active' : ''}`}
+            onClick={() => setShowFiltersOnMobile(!showFiltersOnMobile)}
+            aria-label={showFiltersOnMobile ? 'Hide filters' : 'Show filters'}
+          >
+            <FilterIcon />
+            <span>Filter</span>
+          </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="tw-topics-clear-filters-btn"
+              onClick={clearFilters}
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -249,36 +287,42 @@ export default function Topics() {
               <article key={t.id} className="tw-topics-card">
                 <div className="tw-topics-card-head">
                   <h3 className="tw-topics-card-title">{t.title}</h3>
-                  <div className="tw-topics-card-tags">
-                    {!attempted && <span className="tw-topics-card-new">New</span>}
-                    <span className={`tw-topics-card-tag ${getTagVariant(categoryLabel)}`}>
-                      {categoryLabel}
-                    </span>
-                  </div>
                 </div>
                 <p className="tw-topics-card-desc">
                   {t.description || 'Practice your communication skills.'}
                 </p>
-                <div className="tw-topics-card-meta">
-                  <span>⏱ {limitMinutes} min</span>
-                  {attempted && typeof t.best_score === 'number' && (
-                    <span>Best: {t.best_score}</span>
-                  )}
-                  {attempted && typeof t.last_score === 'number' && t.last_score > 0 && (
-                    <span>Last: {t.last_score}</span>
-                  )}
+                <div className="tw-topics-card-bottom">
+                  <div className="tw-topics-card-meta">
+                    <div className="tw-topics-card-meta-row tw-topics-card-meta-timer-tags">
+                      <span>⏱ {limitMinutes} min</span>
+                      {!attempted && <span className="tw-topics-card-new">New</span>}
+                      <span className={`tw-topics-card-tag ${getTagVariant(categoryLabel)}`}>
+                        {categoryLabel}
+                      </span>
+                    </div>
+                    {(attempted && (typeof t.best_score === 'number' || (typeof t.last_score === 'number' && t.last_score > 0))) && (
+                      <div className="tw-topics-card-meta-row tw-topics-card-meta-scores">
+                        {attempted && typeof t.best_score === 'number' && (
+                          <span>Best: {t.best_score}</span>
+                        )}
+                        {attempted && typeof t.last_score === 'number' && t.last_score > 0 && (
+                          <span>Last: {t.last_score}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <p className={`tw-topics-card-status ${attempted ? 'tw-topics-card-status--done' : 'tw-topics-card-status--pending'}`}>
+                    {attempted ? `✓ Attempted · ${t.attempts || 1} session${(t.attempts || 1) > 1 ? 's' : ''}` : 'Not attempted yet'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleStart(t)}
+                    disabled={startingId === t.id}
+                    className="tw-topics-card-btn"
+                  >
+                    {startingId === t.id ? 'Starting…' : 'Start talking'}
+                  </button>
                 </div>
-                <p className={`tw-topics-card-status ${attempted ? 'tw-topics-card-status--done' : 'tw-topics-card-status--pending'}`}>
-                  {attempted ? `✓ Attempted · ${t.attempts || 1} session${(t.attempts || 1) > 1 ? 's' : ''}` : 'Not attempted yet'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleStart(t)}
-                  disabled={startingId === t.id}
-                  className="tw-topics-card-btn"
-                >
-                  {startingId === t.id ? 'Starting…' : 'Start talking'}
-                </button>
               </article>
             );
           })}

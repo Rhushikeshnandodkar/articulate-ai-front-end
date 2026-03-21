@@ -2,20 +2,17 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
-import { Mic, BarChart3, Sparkles } from 'lucide-react';
 
 export default function Signup() {
   const [form, setForm] = useState({
     username: '',
     email: '',
     password: '',
-    password2: '',
   });
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showPassword2, setShowPassword2] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,7 +29,7 @@ export default function Signup() {
     setError(null);
     setLoading(true);
     try {
-      await register(form);
+      await register({ ...form, password2: form.password });
       goToVerify();
     } catch (err) {
       setError(err);
@@ -53,123 +50,94 @@ export default function Signup() {
   };
 
   return (
-    <div className="auth-page min-h-screen flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <div className="auth-card w-full max-w-md md:max-w-xl rounded-2xl overflow-hidden border border-white/20 backdrop-blur-2xl bg-gray-900/40 shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]">
-        <div className="auth-card-header">
-          <div className="space-y-1">
-            <div className="auth-brand flex items-center gap-3">
-              <div className="auth-logo-wrap flex-shrink-0 ring-2 ring-[#A7ED02]/30 rounded-lg">
-                <AuthLogo className="auth-logo-icon" />
-              </div>
-              <div className="auth-brand-text">
-                <span className="auth-brand-name text-base md:text-lg font-bold tracking-tight">articulate<span className="text-[#A7ED02]">.ai</span></span>
-                <span className="auth-brand-sub text-[0.625rem] md:text-xs block mt-0.5">Voice communication coach</span>
-              </div>
-            </div>
-            <h1 className="auth-card-title text-xl md:text-2xl font-bold tracking-tight mt-4">Create your account</h1>
-            <p className="auth-card-subtitle text-xs md:text-sm">You're one step away from improving your communication skills with AI-powered practice.</p>
-            <div className="flex flex-wrap gap-2 md:gap-3 mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-700/50">
-              <span className="inline-flex items-center gap-1 text-[0.65rem] md:text-xs text-gray-500">
-                <Mic size={12} className="text-[#A7ED02] flex-shrink-0" /> AI voice practice
-              </span>
-              <span className="inline-flex items-center gap-1 text-[0.65rem] md:text-xs text-gray-500">
-                <BarChart3 size={12} className="text-[#A7ED02] flex-shrink-0" /> Real-time feedback
-              </span>
-              <span className="inline-flex items-center gap-1 text-[0.65rem] md:text-xs text-gray-500">
-                <Sparkles size={12} className="text-[#A7ED02] flex-shrink-0" /> Free to start
-              </span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[rgb(10,10,10)] text-white flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-md bg-[rgb(26,26,26)] border border-white/10 rounded-lg md:rounded-2xl p-8 shadow-xl backdrop-blur-sm">
+        {/* LOGO */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <AuthLogo className="w-8 h-8 text-primary" />
+          <span className="text-xl font-semibold">
+            articulate<span className="text-primary">.ai</span>
+          </span>
         </div>
-        <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="auth-error rounded-lg text-sm">{formatError(error)}</div>}
-          <div className="auth-field">
-            <label htmlFor="signup-username" className="text-xs md:text-sm font-medium">Username</label>
+
+        {/* HEADING */}
+        <h2 className="text-2xl font-bold text-center">
+          Create your account
+        </h2>
+
+        <p className="text-gray-400 text-sm text-center mt-2">
+          Start your journey to confident communication
+        </p>
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {error && (
+            <div className="p-3 rounded md:rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {formatError(error)}
+            </div>
+          )}
+
+          {/* USERNAME */}
+          <div>
+            <label className="text-sm text-gray-300">Username</label>
             <input
-              id="signup-username"
               type="text"
               name="username"
-              placeholder="Choose a username"
+              placeholder="Enter your username"
               value={form.username}
               onChange={handleChange}
               required
               autoComplete="username"
-              className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
+              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
             />
           </div>
-          <div className="auth-field">
-            <label htmlFor="signup-email" className="text-xs md:text-sm font-medium">Email</label>
+
+          {/* EMAIL */}
+          <div>
+            <label className="text-sm text-gray-300">Email</label>
             <input
-              id="signup-email"
               type="email"
               name="email"
-              placeholder="name@example.com"
+              placeholder="Enter your email"
               value={form.email}
               onChange={handleChange}
               required
               autoComplete="email"
-              className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
+              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
             />
           </div>
-          <div className="auth-field">
-            <label htmlFor="signup-password" className="text-xs md:text-sm font-medium">Password</label>
-            <div className="auth-field-input-wrap">
-              <input
-                id="signup-password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Create a password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-                className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
-              />
-              <button
-                type="button"
-                className="auth-password-toggle"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '🙈' : '👁'}
-              </button>
-            </div>
+
+          {/* PASSWORD */}
+          <div>
+            <label className="text-sm text-gray-300">Password</label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Create a password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
+            />
           </div>
-          <div className="auth-field">
-            <label htmlFor="signup-password2" className="text-xs md:text-sm font-medium">Confirm password</label>
-            <div className="auth-field-input-wrap">
-              <input
-                id="signup-password2"
-                type={showPassword2 ? 'text' : 'password'}
-                name="password2"
-                placeholder="Confirm your password"
-                value={form.password2}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-                className="rounded-lg transition-shadow focus:ring-2 focus:ring-[#A7ED02]/40"
-              />
-              <button
-                type="button"
-                className="auth-password-toggle"
-                onClick={() => setShowPassword2((v) => !v)}
-                aria-label={showPassword2 ? 'Hide password' : 'Show password'}
-              >
-                {showPassword2 ? '🙈' : '👁'}
-              </button>
-            </div>
-          </div>
-          <div className="auth-actions">
-            <button type="submit" className="auth-primary-btn rounded-lg font-semibold transition-all hover:opacity-95 active:scale-[0.99]" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-4 bg-primary hover:bg-primary/90 text-slate font-medium py-3 rounded md:rounded-md transition"
+          >
+            {loading ? 'Creating account...' : 'Create account'}
+          </button>
         </form>
-        <p className="text-center text-xs md:text-sm mt-5">
-          Already have an account? <Link to="/login" className="text-[#A7ED02] font-medium hover:underline">Log in</Link>
-        </p>
-        <p className="text-center text-[0.65rem] md:text-xs text-gray-500 mt-2 md:mt-3 leading-snug">
-          By signing up, you agree to our terms of service. Your first practice session is free — no credit card required.
+
+        {/* LOGIN LINK */}
+        <p className="text-center text-sm text-gray-400 mt-6">
+          Already have an account?{" "}
+          <Link to="/login" className="text-primary hover:text-secondary transition-colors font-medium hover:underline">
+            Log in
+          </Link>
         </p>
       </div>
     </div>
