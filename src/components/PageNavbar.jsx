@@ -8,7 +8,7 @@ import '../styles/navbar.css';
 function getDefaultTitle(pathname) {
   if (pathname === '/dashboard' || pathname === '/') return 'Dashboard';
   if (pathname.startsWith('/topics')) return 'Practice Topics';
-  if (pathname.startsWith('/profile')) return 'Profile';
+  if (pathname.startsWith('/profile')) return 'Settings';
   if (pathname.startsWith('/voice')) return 'Voice Practice';
   if (pathname === '/conversations') return 'Conversations';
   if (pathname.startsWith('/conversations/')) return 'Conversation';

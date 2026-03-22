@@ -25,10 +25,10 @@ const LEVEL_OPTIONS = [
 ];
 
 const EXAMPLE_INTERESTS = [
-  'Technology', 'Coding', 'AI', 'Startups', 'Leadership', 'Management',
-  'Sports', 'Cricket', 'Football', 'Fitness', 'Music', 'Travel',
-  'Books', 'Writing', 'Public speaking', 'Networking', 'Sales',
-  'Interview prep', 'Career growth', 'Psychology', 'Finance',
+  'Technology', 'Coding', 'AI', 'Startups', 'Politics', 'Religion', 'Philosophy', 'Music',
+  'Sports', 'Cricket', 'Music', 'Travel', 'Food', 'Movies',
+  'Reading', 'Poetry', 'Public speaking', 'Science', 'History', 'Networking', 'Sales',
+  'Interview prep', 'Psychology', 'Finance',
 ];
 
 export default function ProfileSetup() {

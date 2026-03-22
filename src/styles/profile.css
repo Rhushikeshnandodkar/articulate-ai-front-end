@@ -55,6 +55,35 @@
   margin-bottom: 1rem;
 }
 
+.tw-profile-card--support {
+  border-left: 3px solid var(--accent);
+}
+
+/* Offset fixed/top UI when scrolling to #help-customer-care */
+.tw-profile-scroll-anchor {
+  scroll-margin-top: 5.5rem;
+}
+
+.tw-profile-support-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.tw-profile-support-phone {
+  display: inline-block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.tw-profile-support-phone:hover {
+  text-decoration: underline;
+}
+
 [data-theme="light"] .tw-profile-card {
   background: #FFFFFF;
 }

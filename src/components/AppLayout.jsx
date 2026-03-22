@@ -218,10 +218,16 @@ export default function AppLayout() {
                   <span>{planLabel} Plan</span>
                 </div>
               )}
-              <button type="button" className="tw-sidebar-util" title="Help" aria-label="Help">
+              <Link
+                to="/profile#help-customer-care"
+                className="tw-sidebar-util"
+                title="Help — customer care in Settings"
+                aria-label="Help — customer care in Settings"
+                onClick={closeSidebar}
+              >
                 <HelpIcon className="tw-nav-icon" />
                 <span>Help</span>
-              </button>
+              </Link>
               <button type="button" onClick={handleLogout} className="tw-sidebar-util" title="Log out" aria-label="Log out">
                 <LogoutIcon className="tw-nav-icon" />
                 <span>Log Out</span>

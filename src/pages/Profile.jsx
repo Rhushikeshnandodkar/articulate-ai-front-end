@@ -1,6 +1,6 @@
 import '../styles/profile.css';
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
 import { getProfile, updateProfile, getConversations, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
 
@@ -38,6 +38,10 @@ const LABELS = {
   communication_level: 'Level',
 };
 
+/** Customer care (tel: uses E.164 without spaces). */
+const CUSTOMER_CARE_DISPLAY = '+91 7620722083';
+const CUSTOMER_CARE_TEL = '+917620722083';
+
 function PencilIcon() {
   return (
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -54,8 +58,11 @@ function CloseIcon() {
   );
 }
 
+const HELP_SECTION_HASH = '#help-customer-care';
+
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -81,7 +88,7 @@ export default function Profile() {
 
   useEffect(() => {
     setPageNavbar({
-      title: 'Profile',
+      title: 'Settings',
       rightActions: (
         <button
           type="button"
@@ -117,6 +124,18 @@ export default function Profile() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (location.hash !== HELP_SECTION_HASH) return;
+    const t = window.setTimeout(() => {
+      const el = document.getElementById('help-customer-care');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [loading, location.hash, location.pathname]);
 
   useEffect(() => {
     setConversationsLoading(true);
@@ -379,6 +398,20 @@ export default function Profile() {
             </div>
           </>
         )}
+      </section>
+
+      <section
+        id="help-customer-care"
+        className="tw-profile-card tw-profile-card--support tw-profile-scroll-anchor"
+        tabIndex={-1}
+      >
+        <h2 className="tw-profile-card-title">Help &amp; customer care</h2>
+        <p className="tw-profile-support-text">
+          Need help with your account, billing, or practice? Call us — we&apos;re happy to assist.
+        </p>
+        <a href={`tel:${CUSTOMER_CARE_TEL}`} className="tw-profile-support-phone">
+          {CUSTOMER_CARE_DISPLAY}
+        </a>
       </section>
 
       {modalOpen && (
