@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
+import AuthPasswordInput from '../components/AuthPasswordInput';
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -12,8 +13,6 @@ export default function Signup() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -107,20 +106,16 @@ export default function Signup() {
             />
           </div>
 
-          {/* PASSWORD */}
-          <div>
-            <label className="text-sm text-gray-300">Password</label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="Create a password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              autoComplete="new-password"
-              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
-            />
-          </div>
+          <AuthPasswordInput
+            label="Password"
+            id="signup-password"
+            name="password"
+            placeholder="Create a password"
+            value={form.password}
+            onChange={handleChange}
+            required
+            autoComplete="new-password"
+          />
 
           {/* BUTTON */}
           <button

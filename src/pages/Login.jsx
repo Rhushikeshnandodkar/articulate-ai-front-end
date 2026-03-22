@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loginUser, clearError, fetchUser } from '../store/slices/authSlice';
 import { getProfile } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
+import AuthPasswordInput from '../components/AuthPasswordInput';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -93,20 +94,16 @@ export default function Login() {
             />
           </div>
 
-          {/* PASSWORD */}
-          <div>
-            <label className="text-sm text-gray-300">Password</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
-            />
-          </div>
+          <AuthPasswordInput
+            label="Password"
+            id="login-password"
+            name="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
 
           {/* BUTTON */}
           <button
