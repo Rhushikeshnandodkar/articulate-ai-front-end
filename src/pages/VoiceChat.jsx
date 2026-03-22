@@ -6,17 +6,17 @@ import { voiceChat, endConversation } from '../services/api';
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function PlayIcon({ className }) {
+function PlayIcon({ className, style, ...props }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
       <path d="M8 5v14l11-7z" />
     </svg>
   );
 }
 
-function PauseIcon({ className }) {
+function PauseIcon({ className, style, ...props }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
       <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
     </svg>
   );
@@ -93,7 +93,7 @@ export default function VoiceChat() {
     };
     audio.onended = cleanup;
     audio.onerror = () => {
-      setError('Failed to play audio. Try "Play reply" below.');
+      setError('Failed to play audio.');
       cleanup();
     };
     const doPlay = () => {
@@ -101,9 +101,9 @@ export default function VoiceChat() {
         if (e.name === 'NotAllowedError') {
           setAutoplayBlocked(true);
           setPendingPlayUrl((prev) => prev || url);
-          setError('Browser blocked auto-play. Click "Play reply" to hear the AI.');
+          setError('Browser blocked auto-play.');
         } else {
-          setError(e?.message || 'Playback failed. Use "Play reply" to try again.');
+          setError(e?.message || 'Playback failed.');
           cleanup();
         }
         setStatus('idle');
@@ -397,6 +397,36 @@ export default function VoiceChat() {
     return () => window.removeEventListener('popstate', onPopState);
   }, [conversationId]);
 
+  /* Screen Wake Lock: keep phone screen on during voice session (like video playback) */
+  useEffect(() => {
+    if (!navigator.wakeLock) return;
+    let wakeLock = null;
+    const acquire = async () => {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } catch (_) {
+        /* Wake lock not supported or failed (e.g. low battery, user disabled) */
+      }
+    };
+    acquire();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        acquire();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (wakeLock) {
+        try {
+          wakeLock.release();
+        } catch (_) {}
+        wakeLock = null;
+      }
+    };
+  }, []);
+
   const isAiSpeaking = status === 'playing';
   const isProcessing = status === 'sending';
   const isUserSpeaking = listening && status === 'listening';
@@ -413,29 +443,37 @@ export default function VoiceChat() {
                 <span className={`tw-voice-ai-dot ${isAiSpeaking ? 'tw-voice-ai-dot--active' : ''}`} />
                 {isAiSpeaking ? 'AI is speaking…' : isProcessing ? 'AI is thinking…' : 'AI Partner'}
               </div>
-              <p className="tw-voice-ai-display-text">
+              <p key={lastAssistantMessage} className="tw-voice-ai-display-text tw-voice-message-zoom">
                 {isProcessing
                   ? 'Processing your response…'
                   : lastAssistantMessage || (topic ? `Let's practice "${topic}". Click Start Speaking when you're ready.` : "Click Start Speaking when you're ready.")}
               </p>
             </div>
 
-            {/* Waveform + controls */}
+            {/* Waveform + listening status + hint */}
             <div className={`tw-voice-wave-wrap ${isUserSpeaking ? 'tw-voice-wave-active' : ''}`}>
               <span /><span /><span /><span /><span /><span /><span />
             </div>
+            {isUserSpeaking && (
+              <div className="tw-voice-wave-status">
+                <div className="tw-voice-status-line">
+                  <span className="tw-voice-status-dot" aria-hidden />
+                  Listening…
+                </div>
+                <p className="tw-voice-hint">When you&apos;re done speaking, click <strong>Pause</strong> to send your response.</p>
+              </div>
+            )}
 
-            {/* User's live speech */}
+            {/* User's speech display - when listening, show reassurance; when idle, show start CTA */}
             <div className="tw-voice-user-display">
-              {isUserSpeaking && displayTranscript ? (
-                <p className="tw-voice-user-display-text tw-voice-user-display-text--live">{displayTranscript}</p>
-              ) : lastUserMessage && !isUserSpeaking ? (
-                <p className="tw-voice-user-display-text tw-voice-user-display-text--done">
-                  <span className="tw-voice-user-display-label">You said:</span> {lastUserMessage}
+              {isUserSpeaking ? (
+                <p className="tw-voice-user-display-placeholder tw-voice-user-display--listening">
+                  <span className="tw-voice-listening-icon" aria-hidden>🎧</span>
+                  I&apos;m listening to you — speak naturally.
                 </p>
               ) : (
-                <p className="tw-voice-user-display-placeholder">
-                  {isUserSpeaking ? 'Start speaking…' : 'Your speech will appear here'}
+                <p className="tw-voice-user-display-placeholder tw-voice-user-display--start-cta">
+                  Click <strong>Start Speaking</strong> to start talking on this topic.
                 </p>
               )}
             </div>
@@ -462,28 +500,15 @@ export default function VoiceChat() {
                   onClick={requestEndSession}
                   disabled={ending}
                 >
-                  {ending ? 'Ending…' : 'End Session'}
+                  {ending ? 'Ending…' : 'End Session to See Report'}
                 </button>
               )}
             </div>
 
             {/* Status indicators */}
-            {isUserSpeaking && (
-              <div className="tw-voice-status-line">
-                <span className="tw-voice-status-dot" aria-hidden />
-                Listening…
-              </div>
-            )}
             {isProcessing && <div className="tw-voice-status-line">Getting reply…</div>}
             {isAiSpeaking && <div className="tw-voice-status-line tw-voice-status-line--ai">Playing AI reply…</div>}
             {error && <div className="tw-voice-error">{error}</div>}
-            {pendingPlayUrl && (
-              <div className="tw-voice-play-reply">
-                <button type="button" className="tw-btn-primary" onClick={playPendingReply}>
-                  {autoplayBlocked ? 'Play reply' : 'Play reply again'}
-                </button>
-              </div>
-            )}
           </section>
         </main>
 

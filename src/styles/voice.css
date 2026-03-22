@@ -254,6 +254,21 @@
   font-weight: 400;
 }
 
+.tw-voice-message-zoom {
+  animation: tw-voice-zoom-in 0.4s ease-out;
+}
+
+@keyframes tw-voice-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* --- User Display Area --- */
 .tw-voice-user-display {
   background: var(--input-bg);
@@ -298,6 +313,48 @@
   font-style: italic;
 }
 
+.tw-voice-user-display--start-cta {
+  opacity: 1;
+  font-style: normal;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.tw-voice-user-display--start-cta strong {
+  color: var(--accent);
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(167, 237, 2, 0.3);
+}
+
+/* High contrast: when showing start CTA, make the user display area stand out */
+.tw-voice-user-display:has(.tw-voice-user-display--start-cta) {
+  background: rgba(167, 237, 2, 0.08);
+  border: 2px solid rgba(167, 237, 2, 0.35);
+}
+
+[data-theme="light"] .tw-voice-user-display:has(.tw-voice-user-display--start-cta) {
+  background: rgba(5, 150, 105, 0.08);
+  border: 2px solid rgba(5, 150, 105, 0.35);
+}
+
+.tw-voice-user-display--listening {
+  opacity: 1;
+  font-style: normal;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tw-voice-listening-icon {
+  font-size: 1.25rem;
+  animation: tw-ai-pulse 1.2s ease-in-out infinite;
+}
+
 /* --- Waveform --- */
 .tw-voice-wave-wrap {
   display: flex;
@@ -334,6 +391,21 @@
 @keyframes tw-voice-pulse {
   from { transform: scaleY(0.3); }
   to { transform: scaleY(1); }
+}
+
+.tw-voice-wave-status {
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tw-voice-wave-status .tw-voice-status-line {
+  margin-top: 0;
+}
+
+.tw-voice-wave-status .tw-voice-hint {
+  font-size: 1.125rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 
 /* --- Controls --- */
@@ -379,15 +451,18 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
-  background: var(--text-dim);
-  border: none;
+  background: #475569;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .tw-voice-btn-pause:hover:not(:disabled) {
-  background: #475569;
+  background: #64748b;
+  border-color: rgba(255, 255, 255, 0.4);
+  filter: brightness(1.1);
 }
 
 .tw-voice-btn-pause:disabled {
@@ -430,6 +505,19 @@
 
 .tw-voice-status-line--ai {
   color: var(--tag-blue);
+}
+
+.tw-voice-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.tw-voice-hint strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .tw-voice-status-dot {
