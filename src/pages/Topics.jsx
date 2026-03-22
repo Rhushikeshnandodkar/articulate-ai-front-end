@@ -131,7 +131,11 @@ export default function Topics() {
     setError(null);
     setStartingId(topicObj.id);
     try {
-      const conv = await createConversation(topicObj.title, topicObj.id);
+      const conv = await createConversation(
+        topicObj.title,
+        topicObj.id,
+        topicObj.description || undefined,
+      );
       const timeLimitSeconds = topicObj.time_limit_seconds || 180;
       navigate(`/voice?conversation=${conv.id}&solo=1`, {
         state: {

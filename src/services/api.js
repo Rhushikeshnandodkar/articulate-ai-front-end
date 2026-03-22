@@ -372,9 +372,11 @@ export async function getConversations() {
   return data;
 }
 
-export async function createConversation(topic, topicId = null) {
+export async function createConversation(topic, topicId = null, topicDescription = null) {
   const body = { topic: (typeof topic === 'string' ? topic : topic?.title || '').trim() };
   if (topicId != null) body.topic_id = topicId;
+  const desc = topicDescription != null ? String(topicDescription).trim() : '';
+  if (desc) body.topic_description = desc;
   const res = await fetch(`${ARTICULATE_BASE}/conversations/create/`, {
     method: 'POST',
     headers: {

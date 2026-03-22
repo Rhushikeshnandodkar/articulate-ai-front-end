@@ -280,7 +280,7 @@ export default function ConversationDetail() {
                       onClick={() => handleGrammar(m.content)}
                       disabled={loadingAction !== null}
                     >
-                      {loadingAction === 'grammar' ? '…' : '✓ Grammar check'}
+                      {loadingAction === 'grammar' ? '…' : '✓ Speaking grammar'}
                     </button>
                   </div>
                 )}
@@ -304,7 +304,7 @@ export default function ConversationDetail() {
             <div className="tw-detail-modal-header">
               <h2 id="detail-modal-title" className="tw-detail-modal-title">
                 {modal.type === 'rephrase' && 'Better version'}
-                {modal.type === 'grammar' && 'Grammar check'}
+                {modal.type === 'grammar' && 'Speaking grammar'}
                 {modal.type === 'error' && 'Something went wrong'}
               </h2>
               <button type="button" className="tw-detail-modal-close" onClick={closeModal} aria-label="Close">
@@ -338,13 +338,13 @@ export default function ConversationDetail() {
               {modal.type === 'grammar' && modal.data && (
                 <>
                   <div className="tw-detail-modal-block">
-                    <p className="tw-detail-modal-label">Your text</p>
+                    <p className="tw-detail-modal-label">What you said</p>
                     <p className="tw-detail-modal-text">{modal.data.original}</p>
                   </div>
                   {modal.data.mistake_count > 0 ? (
                     <>
                       <div className="tw-detail-modal-block">
-                        <p className="tw-detail-modal-label">Mistakes ({modal.data.mistake_count})</p>
+                        <p className="tw-detail-modal-label">Spoken issues ({modal.data.mistake_count})</p>
                         <ul className="tw-detail-modal-mistakes">
                           {modal.data.mistakes.map((err, i) => (
                             <li key={i}>
@@ -357,16 +357,16 @@ export default function ConversationDetail() {
                         </ul>
                       </div>
                       <div className="tw-detail-modal-block tw-detail-modal-highlight">
-                        <p className="tw-detail-modal-label">Corrected sentence</p>
+                        <p className="tw-detail-modal-label">Smoother way to say it</p>
                         <p className="tw-detail-modal-text">{modal.data.corrected_sentence}</p>
                       </div>
                     </>
                   ) : (
                     <div className="tw-detail-modal-block tw-detail-modal-success">
-                      No grammar mistakes found. Good job!
+                      {modal.data.summary || 'No spoken grammar issues stood out — sounds natural.'}
                     </div>
                   )}
-                  {modal.data.summary && (
+                  {modal.data.mistake_count > 0 && modal.data.summary && (
                     <div className="tw-detail-modal-block tw-detail-modal-summary">
                       <p className="tw-detail-modal-label">Tip</p>
                       <p className="tw-detail-modal-text">{modal.data.summary}</p>

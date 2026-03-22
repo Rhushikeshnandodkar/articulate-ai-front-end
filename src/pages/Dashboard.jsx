@@ -313,6 +313,14 @@ export default function Dashboard() {
       typeof topicName === 'object'
         ? (topicName.openingQuestion || topicName.opening_question || topicName.question || '')
         : '';
+    const topicIdForApi =
+      typeof topicName === 'object' && topicName.id != null ? topicName.id : null;
+    const descParts = [];
+    if (topicDescription) descParts.push(String(topicDescription).trim());
+    if (topicOpeningQuestion) {
+      descParts.push(`Practice angle: ${String(topicOpeningQuestion).trim()}`);
+    }
+    const topicDescriptionForApi = descParts.filter(Boolean).join('\n\n') || undefined;
     if (!t) {
       setError('Enter or select a topic.');
       return;
@@ -324,7 +332,7 @@ export default function Dashboard() {
     setError(null);
     setStarting(true);
     try {
-      const data = await createConversation(t);
+      const data = await createConversation(t, topicIdForApi, topicDescriptionForApi);
       navigate(`/voice?conversation=${data.id}`, {
         state: {
           conversationId: data.id,
