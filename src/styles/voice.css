@@ -89,6 +89,19 @@
   margin-bottom: 0.35rem;
 }
 
+.tw-voice-stat-hint {
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  opacity: 0.92;
+  margin: 0.5rem 0 0;
+}
+
+.tw-voice-stat-hint strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .tw-voice-stat-value {
   font-size: 1.125rem;
   font-weight: 700;

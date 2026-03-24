@@ -39,6 +39,10 @@ export default function VoiceChat() {
     location.state?.conversationId ??
     (searchParams.get('conversation') ? Number(searchParams.get('conversation')) : null);
   const solo = Boolean(location.state?.solo) || searchParams.get('solo') === '1';
+  const timeLimitSeconds =
+    typeof location.state?.timeLimitSeconds === 'number' && location.state.timeLimitSeconds > 0
+      ? location.state.timeLimitSeconds
+      : null;
   const [topic, setTopic] = useState(() => location.state?.topic ?? '');
   const [openingReady, setOpeningReady] = useState(false);
 
@@ -61,19 +65,47 @@ export default function VoiceChat() {
   const listeningRef = useRef(false);
   const hasSpokenRef = useRef(false);
   const speakingStartRef = useRef(null);
+  /** Total seconds with mic on this session (only while Start Speaking → Pause). */
+  const [accumulatedPracticeSeconds, setAccumulatedPracticeSeconds] = useState(0);
+  /** Current mic segment length (updates while listening for a smooth clock). */
+  const [segmentElapsedLive, setSegmentElapsedLive] = useState(0);
+  useEffect(() => {
+    if (!listening) {
+      setSegmentElapsedLive(0);
+      return undefined;
+    }
+    const tick = () => {
+      if (speakingStartRef.current) {
+        setSegmentElapsedLive((Date.now() - speakingStartRef.current) / 1000);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 500);
+    return () => {
+      window.clearInterval(id);
+      setSegmentElapsedLive(0);
+    };
+  }, [listening]);
+
+  /* If mic stops due to error (not normal Pause), still count practice time. */
+  useEffect(() => {
+    if (listening || !speakingStartRef.current) return;
+    const d = (Date.now() - speakingStartRef.current) / 1000;
+    if (d > 0) setAccumulatedPracticeSeconds((prev) => prev + d);
+    speakingStartRef.current = null;
+  }, [listening]);
+
   listeningRef.current = listening;
 
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  useEffect(() => {
-    if (!conversationId) return;
-    const start = Date.now();
-    const t = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [conversationId]);
-  const elapsedDisplay = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
-  const sessionProgress = Math.min(100, Math.floor(elapsedSeconds / 60) * 10);
+  const displayPracticeSeconds = Math.floor(
+    accumulatedPracticeSeconds + (listening ? segmentElapsedLive : 0),
+  );
+  const practiceDisplay = `${String(Math.floor(displayPracticeSeconds / 60)).padStart(2, '0')}:${String(displayPracticeSeconds % 60).padStart(2, '0')}`;
+
+  const userTurnCount = transcriptLines.filter((l) => l.role === 'user').length;
+  const sessionProgress = timeLimitSeconds
+    ? Math.min(100, Math.round((displayPracticeSeconds / timeLimitSeconds) * 100))
+    : Math.min(100, userTurnCount * 15);
 
   const lastAssistantMessage = transcriptLines.filter((l) => l.role === 'assistant').slice(-1)[0]?.content ?? '';
   const lastUserMessage = transcriptLines.filter((l) => l.role === 'user').slice(-1)[0]?.content ?? '';
@@ -337,6 +369,9 @@ export default function VoiceChat() {
     if (listening) {
       const text = accumulatedRef.current.trim();
       const duration = getSpokenDuration();
+      if (Number.isFinite(duration) && duration > 0) {
+        setAccumulatedPracticeSeconds((prev) => prev + duration);
+      }
       speakingStartRef.current = null;
       const recorder = mediaRecorderRef.current;
 
@@ -629,18 +664,18 @@ export default function VoiceChat() {
             </div>
 
             <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">Time Elapsed</p>
+              <p className="tw-voice-stat-label">Speaking time (this session)</p>
               <div className="tw-voice-stat-row">
-                <p className="tw-voice-stat-value">{elapsedDisplay}</p>
+                <p className="tw-voice-stat-value">{practiceDisplay}</p>
                 <span className="tw-voice-stat-icon" style={{ background: 'rgba(30, 58, 138, 0.15)', color: 'var(--accent)' }}><ClockIcon /></span>
               </div>
-              <div className="tw-voice-stat-bar">
-                <div className="tw-voice-stat-bar-fill" style={{ width: `${Math.min(100, (elapsedSeconds / 60) * 5)}%` }} />
-              </div>
+              <p className="tw-voice-stat-hint">
+                Runs only while <strong>Start Speaking</strong> is on; pauses when you tap <strong>Pause</strong>. This is not your subscription minute balance.
+              </p>
             </div>
 
             <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">Session Progress</p>
+              <p className="tw-voice-stat-label">{timeLimitSeconds ? 'Time toward topic goal' : 'Session progress'}</p>
               <div className="tw-voice-stat-row">
                 <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
               </div>
