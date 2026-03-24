@@ -6,6 +6,9 @@ import { voiceChat, endConversation, getConversation } from '../services/api';
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
+/** Session progress bar: 1 min speaking = 10%, 10 min = 100% (mic-on time only). */
+const SESSION_PROGRESS_FULL_SECONDS = 10 * 60;
+
 function PlayIcon({ className, style, ...props }) {
   return (
     <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
@@ -39,10 +42,6 @@ export default function VoiceChat() {
     location.state?.conversationId ??
     (searchParams.get('conversation') ? Number(searchParams.get('conversation')) : null);
   const solo = Boolean(location.state?.solo) || searchParams.get('solo') === '1';
-  const timeLimitSeconds =
-    typeof location.state?.timeLimitSeconds === 'number' && location.state.timeLimitSeconds > 0
-      ? location.state.timeLimitSeconds
-      : null;
   const [topic, setTopic] = useState(() => location.state?.topic ?? '');
   const [openingReady, setOpeningReady] = useState(false);
 
@@ -102,10 +101,10 @@ export default function VoiceChat() {
   );
   const practiceDisplay = `${String(Math.floor(displayPracticeSeconds / 60)).padStart(2, '0')}:${String(displayPracticeSeconds % 60).padStart(2, '0')}`;
 
-  const userTurnCount = transcriptLines.filter((l) => l.role === 'user').length;
-  const sessionProgress = timeLimitSeconds
-    ? Math.min(100, Math.round((displayPracticeSeconds / timeLimitSeconds) * 100))
-    : Math.min(100, userTurnCount * 15);
+  const sessionProgress = Math.min(
+    100,
+    Math.round((displayPracticeSeconds / SESSION_PROGRESS_FULL_SECONDS) * 100),
+  );
 
   const lastAssistantMessage = transcriptLines.filter((l) => l.role === 'assistant').slice(-1)[0]?.content ?? '';
   const lastUserMessage = transcriptLines.filter((l) => l.role === 'user').slice(-1)[0]?.content ?? '';
@@ -675,10 +674,13 @@ export default function VoiceChat() {
             </div>
 
             <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">{timeLimitSeconds ? 'Time toward topic goal' : 'Session progress'}</p>
+              <p className="tw-voice-stat-label">Session progress</p>
               <div className="tw-voice-stat-row">
                 <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
               </div>
+              <p className="tw-voice-stat-hint">
+                Based on <strong>speaking time</strong> only: each full minute adds <strong>10%</strong>; reach <strong>100%</strong> after <strong>10 minutes</strong> of mic-on practice.
+              </p>
               <div className="tw-voice-stat-bar">
                 <div className="tw-voice-stat-bar-fill" style={{ width: `${sessionProgress}%`, background: 'var(--accent)' }} />
               </div>
