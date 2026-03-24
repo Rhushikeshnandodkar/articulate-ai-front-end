@@ -400,6 +400,24 @@
   letter-spacing: -0.02em;
 }
 
+.tw-dashboard-section-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tw-dashboard-view-more-link {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tw-dashboard-view-more-link:hover {
+  text-decoration: underline;
+}
+
 .tw-dashboard-view-all {
   display: inline-flex;
   align-items: center;

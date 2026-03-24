@@ -111,7 +111,7 @@ export default function Topics() {
   const filtered = useMemo(() => {
     const limited = isFreePlan ? topics.slice(0, 5) : topics;
     const query = search.trim().toLowerCase();
-    return limited.filter((t) => {
+    const list = limited.filter((t) => {
       if (level !== 'all' && t.level !== level) return false;
       if (category !== 'all' && t.category !== category) return false;
       if (attemptFilter === 'attempted' && !t.completed) return false;
@@ -119,6 +119,12 @@ export default function Topics() {
       if (!query) return true;
       const haystack = `${t.title} ${t.category ?? ''} ${t.description ?? ''}`.toLowerCase();
       return haystack.includes(query);
+    });
+    return [...list].sort((a, b) => {
+      const aDone = !!a.completed;
+      const bDone = !!b.completed;
+      if (aDone === bDone) return 0;
+      return aDone ? 1 : -1;
     });
   }, [topics, search, level, category, attemptFilter, isFreePlan]);
 

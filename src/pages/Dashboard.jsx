@@ -506,7 +506,7 @@ export default function Dashboard() {
                 <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-primary">
                   {starting ? 'Starting…' : 'Start AI Session'}
                 </button>
-                <button type="button" onClick={() => {}} className="tw-btn-secondary">Choose Topic</button>
+                <button type="button" onClick={() => navigate('/topics')} className="tw-btn-secondary">Choose Topic</button>
               </div>
             </>
           )}
@@ -624,16 +624,22 @@ export default function Dashboard() {
       <section className="tw-dashboard-topics-full">
         <div className="tw-dashboard-section-head">
           <h3 className="tw-dashboard-section-title">Recommended Topics</h3>
-          {!quotaExceeded && (
-            <button
-              type="button"
-              className="tw-dashboard-view-all"
-              onClick={loadTopics}
-              disabled={topicsRefreshing}
-            >
-              <RefreshIcon />
-            </button>
-          )}
+          <div className="tw-dashboard-section-head-actions">
+            <Link to="/topics" className="tw-dashboard-view-more-link">
+              View more
+            </Link>
+            {!quotaExceeded && (
+              <button
+                type="button"
+                className="tw-dashboard-view-all"
+                onClick={loadTopics}
+                disabled={topicsRefreshing}
+                aria-label="Refresh recommended topics"
+              >
+                <RefreshIcon />
+              </button>
+            )}
+          </div>
         </div>
         {quotaExceeded ? (
           <p className="tw-muted">
