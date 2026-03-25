@@ -246,6 +246,7 @@ export default function Dashboard() {
               title: t.title || t.name || String(t),
               category: t.category || t.tag || 'General',
               description: t.description || t.desc || 'Practice your communication skills.',
+                opening_question: t.opening_question || t.openingQuestion || t.question,
             };
           });
           setRecommendedTopics(normalized);
@@ -358,12 +359,26 @@ export default function Dashboard() {
     setPageNavbar({ title: 'Dashboard' });
     return () => setPageNavbar({});
   }, [setPageNavbar]);
+
+  const pickOpeningQuestionFallback = (titleText) => {
+    const t = String(titleText || '').trim();
+    const safe = t || 'this topic';
+    const options = [
+      `Describe a real moment connected to “${safe}” — what happened and why does it matter to you?`,
+      `What is your honest opinion about “${safe}”, and what is one example from your life?`,
+      `If “${safe}” became urgent this week, what would you do first and why?`,
+    ];
+    const firstChar = safe.length > 0 ? safe.charCodeAt(0) : 0;
+    const idx = (safe.length + firstChar) % options.length;
+    return options[idx];
+  };
+
   const suggestedTopicObj = Array.isArray(recommendedTopics) && recommendedTopics.length > 0
     ? (typeof recommendedTopics[0] === 'string'
         ? {
             title: recommendedTopics[0],
             description: 'Practice your communication skills.',
-            openingQuestion: `In your own words, what do you think about ${recommendedTopics[0]} in today’s world?`,
+            openingQuestion: pickOpeningQuestionFallback(recommendedTopics[0]),
           }
         : {
             title: recommendedTopics[0].title || recommendedTopics[0].name || String(recommendedTopics[0]),
@@ -372,7 +387,9 @@ export default function Dashboard() {
               recommendedTopics[0].opening_question ||
               recommendedTopics[0].openingQuestion ||
               recommendedTopics[0].question ||
-              `In your own words, what do you think about ${recommendedTopics[0].title || recommendedTopics[0].name || String(recommendedTopics[0])} in today’s world?`,
+              pickOpeningQuestionFallback(
+                recommendedTopics[0].title || recommendedTopics[0].name || String(recommendedTopics[0]),
+              ),
           })
     : {
         title: 'Technology',
@@ -424,7 +441,7 @@ export default function Dashboard() {
         title: t,
         category: 'General',
         description: 'Practice your communication skills.',
-        openingQuestion: `In your own words, what do you think about ${t} in today’s world?`,
+        openingQuestion: pickOpeningQuestionFallback(t),
         tagClass: 'tw-topic-tag-blue',
       };
     }
@@ -434,7 +451,7 @@ export default function Dashboard() {
       t.opening_question ||
       t.openingQuestion ||
       t.question ||
-      `In your own words, what do you think about ${t.title || t.name || String(t)} in today’s world?`;
+      pickOpeningQuestionFallback(t.title || t.name || String(t));
     return {
       title: t.title || t.name || String(t),
       category,
@@ -653,7 +670,7 @@ export default function Dashboard() {
               <ChevronLeftIcon />
             </button>
             <div className="tw-dashboard-topics-scroll" ref={topicsScrollRef}>
-            {topicCards.slice(0, 6).map((t) => (
+            {topicCards.slice(0, 7).map((t) => (
               <div key={t.title + (t.category || '')} className="tw-topic-card">
                 <div className="tw-topic-card-head">
                   <span className={`tw-topic-tag ${t.tagClass || getTagClass(t.category)}`}>{t.category}</span>
