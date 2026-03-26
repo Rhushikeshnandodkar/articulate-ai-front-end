@@ -5,6 +5,7 @@ import { loginUser, clearError, fetchUser } from '../store/slices/authSlice';
 import { getProfile } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
 import AuthPasswordInput from '../components/AuthPasswordInput';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -79,13 +80,13 @@ export default function Login() {
             </div>
           )}
 
-          {/* USERNAME */}
+          {/* Email or username (backend accepts both) */}
           <div>
-            <label className="text-sm text-gray-300">Username</label>
+            <label className="text-sm text-gray-300">Email or username</label>
             <input
               type="text"
               name="username"
-              placeholder="Enter your username"
+              placeholder="you@example.com or your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -114,6 +115,20 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden>
+                <span className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-[rgb(26,26,26)] px-3 text-gray-500">or</span>
+              </div>
+            </div>
+            <GoogleSignInButton />
+          </>
+        )}
 
         {/* SIGNUP LINK */}
         <p className="text-center text-sm text-gray-400 mt-6">

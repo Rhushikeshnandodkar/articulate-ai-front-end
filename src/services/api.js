@@ -17,6 +17,18 @@ export async function login(username, password) {
   return data;
 }
 
+/** Exchange Google ID token (JWT from GIS) for app access + refresh tokens. */
+export async function googleLogin(idToken) {
+  const res = await fetch(`${API_BASE}/google/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
 export async function register(payload) {
   let res;
   try {

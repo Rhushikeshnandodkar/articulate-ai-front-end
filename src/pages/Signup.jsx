@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
 import AuthLogo from '../components/AuthLogo';
 import AuthPasswordInput from '../components/AuthPasswordInput';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -67,6 +68,22 @@ export default function Signup() {
         <p className="text-gray-400 text-sm text-center mt-2">
           Start your journey to confident communication
         </p>
+
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+          <>
+            <div className="mt-6">
+              <GoogleSignInButton />
+            </div>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center" aria-hidden>
+                <span className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-[rgb(26,26,26)] px-3 text-gray-500">or sign up with email</span>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
