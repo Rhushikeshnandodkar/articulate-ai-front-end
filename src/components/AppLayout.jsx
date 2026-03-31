@@ -9,6 +9,7 @@ import { getProfile, getPlans } from '../services/api';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', Icon: DashboardIcon },
+  { to: '/talking-agent', label: 'Talking Agent', Icon: PracticeIcon },
   { to: '/topics', label: 'Topics', Icon: TopicsIcon },
   { to: '/conversations', label: 'Conversations', Icon: ReportsIcon },
   { to: '/profile', label: 'Settings', Icon: SettingsIcon },
@@ -190,6 +191,7 @@ export default function AppLayout() {
                 const isActive =
                   (to === '/dashboard' && pathname.startsWith('/dashboard')) ||
                   (to === '/topics' && (pathname === '/topics' || pathname === '/voice')) ||
+                  (to === '/talking-agent' && pathname.startsWith('/talking-agent')) ||
                   (to === '/conversations' && pathname.startsWith('/conversations')) ||
                   (to === '/profile' && pathname.startsWith('/profile'));
                 return (
@@ -252,6 +254,7 @@ export default function AppLayout() {
             const isActive =
               (to === '/dashboard' && pathname.startsWith('/dashboard')) ||
               (to === '/topics' && (pathname === '/topics' || pathname === '/voice')) ||
+              (to === '/talking-agent' && pathname.startsWith('/talking-agent')) ||
               (to === '/conversations' && pathname.startsWith('/conversations')) ||
               (to === '/profile' && pathname.startsWith('/profile'));
             return (

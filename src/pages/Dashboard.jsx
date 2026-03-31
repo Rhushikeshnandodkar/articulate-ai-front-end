@@ -509,8 +509,13 @@ export default function Dashboard() {
                 >
                   {starting ? 'Starting…' : 'Start today\'s topic'}
                 </button>
-                <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-secondary">
-                  Or use recommended topic
+                <button
+                  type="button"
+                  onClick={() => navigate('/talking-agent')}
+                  disabled={starting}
+                  className="tw-btn-secondary"
+                >
+                  Talk with partner
                 </button>
               </div>
             </>
@@ -520,8 +525,8 @@ export default function Dashboard() {
                 Your AI partner is ready. Today&apos;s suggested topic is based on your interest in {suggestedTopic}.
               </p>
               <div className="tw-dashboard-ready-actions">
-                <button type="button" onClick={() => startPractice(suggestedTopicObj)} disabled={starting} className="tw-btn-primary">
-                  {starting ? 'Starting…' : 'Start AI Session'}
+                <button type="button" onClick={() => navigate('/talking-agent')} className="tw-btn-secondary" disabled={starting}>
+                  Talk with partner
                 </button>
                 <button type="button" onClick={() => navigate('/topics')} className="tw-btn-secondary">Choose Topic</button>
               </div>

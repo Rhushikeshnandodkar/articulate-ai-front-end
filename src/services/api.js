@@ -339,6 +339,89 @@ export async function voiceChat({ text = '', conversationId = null, audioBlob = 
   throw { error: 'Invalid response from voice API.' };
 }
 
+/** Start a new Random Talking Agent session. Returns { conversation_id, topic, opening_line }. */
+export async function startTalkingAgent() {
+  const res = await fetch(`${ARTICULATE_BASE}/talking-agent/start/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw data;
+  return data;
+}
+
+/**
+ * Talking Agent voice: same shape as voiceChat(), but AI replies are forced to 1 line.
+ * Returns { blob, text }.
+ */
+export async function talkingAgentVoiceChat({ text = '', conversationId = null, audioBlob = null, spokenDurationSeconds = 0 }) {
+  let res;
+  if (audioBlob != null) {
+    const form = new FormData();
+    form.append('audio', audioBlob, 'audio.webm');
+    if (conversationId != null) form.append('conversation_id', String(conversationId));
+    if (spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0) {
+      form.append('spoken_duration_seconds', String(spokenDurationSeconds.toFixed(2)));
+    }
+    res = await fetch(`${ARTICULATE_BASE}/talking-agent/voice/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: form,
+    });
+  } else {
+    const body = {
+      text: (text || '').trim(),
+      ...(conversationId != null ? { conversation_id: conversationId } : {}),
+      ...(spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0
+        ? { spoken_duration_seconds: spokenDurationSeconds }
+        : {}),
+    };
+    res = await fetch(`${ARTICULATE_BASE}/talking-agent/voice/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  const contentType = (res.headers.get('Content-Type') || '').toLowerCase();
+  if (!res.ok) {
+    const err = contentType.includes('application/json')
+      ? await res.json().catch(() => ({ error: res.statusText }))
+      : { error: res.statusText };
+    throw err;
+  }
+
+  if (contentType.includes('audio/') || res.headers.get('X-AI-Response-Text')) {
+    const buf = await res.arrayBuffer();
+    const blobType = contentType.includes('audio/') ? contentType.split(';')[0].trim() : 'audio/wav';
+    const blob = new Blob([buf], { type: blobType });
+    if (blob.size === 0) throw { error: 'Server returned empty audio.' };
+    let aiText = '';
+    const textB64 = res.headers.get('X-AI-Response-Text');
+    if (textB64) {
+      try {
+        const binary = atob(textB64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        aiText = new TextDecoder('utf-8').decode(bytes);
+      } catch (_) {}
+    }
+    return { blob, text: aiText };
+  }
+
+  const data = await res.json().catch(() => null);
+  if (data && typeof data.text === 'string') return { blob: null, text: data.text };
+  if (data && data.error) throw data;
+  throw { error: 'Invalid response from talking agent voice API.' };
+}
+
 /** Get today's daily practice topic (one per user per day). */
 export async function getDailyTopic() {
   const res = await fetch(`${ARTICULATE_BASE}/daily-topic/`, {

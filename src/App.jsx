@@ -15,6 +15,7 @@ import Conversations from './pages/Conversations';
 import Profile from './pages/Profile';
 import ProfileSetup from './pages/ProfileSetup';
 import VoiceChat from './pages/VoiceChat';
+import TalkingAgent from './pages/TalkingAgent';
 import ConversationDetail from './pages/ConversationDetail';
 import Topics from './pages/Topics';
 import './App.css';
@@ -66,6 +67,7 @@ function App() {
           <Route path="conversations/:id" element={<ConversationDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="voice" element={<VoiceChat />} />
+          <Route path="talking-agent" element={<TalkingAgent />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
