@@ -231,6 +231,15 @@ Improve Your Communication Skills. <br />
   )}
 </div>
 
+{/* DAY PASS HIGHLIGHT */}
+<button
+  type="button"
+  onClick={() => scrollToSection('pricing')}
+  className="mt-5 md:mt-6 inline-flex items-center gap-2 bg-[#A7ED02]/10 border border-[#A7ED02]/40 text-[#A7ED02] px-4 py-1.5 md:px-5 md:py-2 rounded-full text-xs md:text-sm font-medium hover:bg-[#A7ED02]/20 transition cursor-pointer"
+>
+  ⚡ Full access starts at just ₹15 for one day — no subscription needed
+</button>
+
 </div>
       <section id="features" className="bg-[#0A0A0A] text-white px-4 md:px-16 py-12 md:py-20">
       
@@ -378,21 +387,28 @@ Improve Your Communication Skills. <br />
             No plans available at the moment.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-8 md:mt-12 w-full mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-8 md:mt-12 w-full mx-auto">
             {plans.map((plan) => {
-              const isStarter = Number(plan.price) === 0 || plan.id === starterPlan?.id;
+              const isDayPass = plan.plan_type === 'day_pass';
+              const isStarter = !isDayPass && (Number(plan.price) === 0 || plan.id === starterPlan?.id);
               const priceLabel = Number(plan.price) === 0 ? 'Free' : `₹${Number(plan.price).toFixed(2)}`;
+              const priceSuffix = isDayPass ? '/ 1 day' : '/ month';
 
               return (
                 <div
                   key={plan.id}
                   className={`relative bg-[#0A0A0A] border rounded-xl p-3 md:p-4 flex flex-col justify-between
-              ${isStarter ? 'border-[#A7ED02]' : 'border-gray-800'}`}
+              ${isStarter || isDayPass ? 'border-[#A7ED02]' : 'border-gray-800'}`}
                 >
                   {/* BADGE */}
                   {isStarter && (
                     <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-[#A7ED02] text-black text-[0.65rem] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-semibold">
                       Starter
+                    </div>
+                  )}
+                  {isDayPass && (
+                    <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-[#A7ED02] text-black text-[0.65rem] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-semibold">
+                      ⚡ Just ₹15
                     </div>
                   )}
 
@@ -401,8 +417,13 @@ Improve Your Communication Skills. <br />
                     <h3 className="text-base md:text-lg font-semibold">{plan.name}</h3>
 
                     <p className="mt-1 text-[#A7ED02] font-medium text-sm md:text-base">
-                      {priceLabel} / month
+                      {priceLabel} {priceSuffix}
                     </p>
+                    {isDayPass && (
+                      <p className="mt-1 text-gray-400 text-xs md:text-sm">
+                        Unlimited practice for one full day. No subscription.
+                      </p>
+                    )}
 
                     <div
                       className="mt-3 md:mt-4 landing-plan-description"
@@ -415,12 +436,12 @@ Improve Your Communication Skills. <br />
                     to="/signup"
                     className={`mt-3 md:mt-4 w-full py-2 md:py-2.5 rounded-lg font-medium transition block text-center text-xs md:text-sm
                 ${
-                  isStarter
+                  isStarter || isDayPass
                     ? 'bg-[#A7ED02] hover:opacity-90 text-black'
                     : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
                 }`}
                   >
-                    {isStarter ? 'Starter Plan' : 'Get Started'}
+                    {isDayPass ? 'Get Day Pass →' : isStarter ? 'Starter Plan' : 'Get Started'}
                   </Link>
                 </div>
               );

@@ -117,6 +117,10 @@
   background: linear-gradient(135deg, rgba(244, 63, 94, 0.2) 0%, rgba(244, 63, 94, 0.08) 100%);
 }
 
+.tw-profile-plans-grid .tw-profile-plan-card:nth-child(4) {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.08) 100%);
+}
+
 [data-theme="light"] .tw-profile-plans-grid .tw-profile-plan-card:nth-child(1) {
   background: linear-gradient(135deg, rgba(5, 150, 105, 0.18) 0%, rgba(5, 150, 105, 0.06) 100%);
 }
@@ -127,6 +131,10 @@
 
 [data-theme="light"] .tw-profile-plans-grid .tw-profile-plan-card:nth-child(3) {
   background: linear-gradient(135deg, rgba(244, 63, 94, 0.18) 0%, rgba(244, 63, 94, 0.06) 100%);
+}
+
+[data-theme="light"] .tw-profile-plans-grid .tw-profile-plan-card:nth-child(4) {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.18) 0%, rgba(168, 85, 247, 0.06) 100%);
 }
 
 .tw-profile-plan-card--current {

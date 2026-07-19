@@ -259,10 +259,10 @@ const ARTICULATE_BASE = `${API_ORIGIN}/api/articulate`;
 
 /**
  * Send user speech (text or audio) to backend; returns { blob, text } for AI reply.
- * AI speaks only when this is called (user clicked Pause). No auto-send.
+ * Called when the user pauses (button) or after ~4s of mic silence.
  * - text: transcript from live display (optional if sending audio).
  * - conversationId: optional; if provided, messages are saved and prompt uses conversation topic.
- * - audioBlob: optional; if provided, backend uses ElevenLabs STT to transcribe (captures um, uh, etc.).
+ * - audioBlob: optional; if provided, backend uses STT to transcribe (captures um, uh, etc.).
  * - welcome: if true and conversationId set, returns AI welcome message (first message for new conversation).
  */
 export async function voiceChat({ text = '', conversationId = null, audioBlob = null, welcome = false, spokenDurationSeconds = 0, solo = false }) {

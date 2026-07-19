@@ -8,6 +8,13 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 /** Session progress bar: 1 min speaking = 10%, 10 min = 100% (mic-on time only). */
 const SESSION_PROGRESS_FULL_SECONDS = 10 * 60;
 
+/** After this much mic silence the response is sent automatically (AI starts talking). */
+const SILENCE_AUTO_SEND_MS = 4000;
+/** RMS above this counts as speech for silence detection (AnalyserNode). */
+const SPEECH_RMS_THRESHOLD = 0.02;
+/** After the AI finishes speaking, auto-start the mic so the user can reply hands-free. */
+const AUTO_LISTEN_AFTER_AI_MS = 2000;
+
 function PlayIcon({ className, style, ...props }) {
   return (
     <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
@@ -54,8 +61,17 @@ export default function TalkingAgent() {
   ));
   const [topic, setTopic] = useState(() => location.state?.topic ?? '');
   const [openingReady, setOpeningReady] = useState(false);
+  /* Don't create a session on mount. Only after the user clicks Start (unless resuming an existing one). */
+  const [sessionStarted, setSessionStarted] = useState(() => Boolean(
+    location.state?.conversationId ??
+    (searchParams.get('conversation') ? Number(searchParams.get('conversation')) : null),
+  ));
 
   const [listening, setListening] = useState(false);
+  /* Freeze pause: mic + timers + recording are frozen (not sent) so the user can think. */
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  pausedRef.current = paused;
   const [transcriptLines, setTranscriptLines] = useState([]);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
@@ -120,9 +136,15 @@ export default function TalkingAgent() {
 
   const lastAssistantMessage = transcriptLines.filter((l) => l.role === 'assistant').slice(-1)[0]?.content ?? '';
 
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  /** Assigned later; starts the mic ~2s after the AI finishes speaking. */
+  const scheduleAutoListenRef = useRef(() => {});
+  const autoListenTimerRef = useRef(null);
+
   const playAudio = useCallback((url, options = {}) => {
     if (!url) return;
-    const { revokeOnEnd = false } = options;
+    const { revokeOnEnd = false, autoListen = true } = options;
     const audio = new Audio(url);
     audio.volume = 1;
     let cleaned = false;
@@ -135,7 +157,10 @@ export default function TalkingAgent() {
       setStatus('idle');
       setAutoplayBlocked(false);
     };
-    audio.onended = cleanup;
+    audio.onended = () => {
+      cleanup();
+      if (autoListen) scheduleAutoListenRef.current();
+    };
     audio.onerror = () => {
       setError('Failed to play audio.');
       cleanup();
@@ -214,8 +239,9 @@ export default function TalkingAgent() {
     }
   }, [playAudio, conversationId]);
 
-  // Bootstrap: if no conversation_id, create a new talking agent session; then load messages.
+  // Bootstrap: only after the user starts the session. Create the session (if new), then load messages.
   useEffect(() => {
+    if (!sessionStarted) return undefined;
     let cancelled = false;
 
     async function bootstrap() {
@@ -265,7 +291,7 @@ export default function TalkingAgent() {
 
     bootstrap();
     return () => { cancelled = true; };
-  }, [conversationId, navigate]);
+  }, [sessionStarted, conversationId, navigate]);
 
   useEffect(() => {
     if (!SpeechRecognition) return;
@@ -286,6 +312,10 @@ export default function TalkingAgent() {
         }
       }
       if (finalText) accumulatedRef.current = (accumulatedRef.current + ' ' + finalText).trim();
+      if ((finalText && finalText.trim()) || (interim && interim.trim())) {
+        heardSpeechRef.current = true;
+        lastSpeechAtRef.current = Date.now();
+      }
       // Reuse VoiceChat's approach: show live transcript in the UI only when listening (we keep it minimal here)
     };
 
@@ -301,7 +331,7 @@ export default function TalkingAgent() {
     };
 
     recognition.onend = () => {
-      if (listeningRef.current) {
+      if (listeningRef.current && !pausedRef.current) {
         try { recognition.start(); } catch (_) {}
       }
     };
@@ -323,11 +353,120 @@ export default function TalkingAgent() {
   }, [listening]);
 
   const sentByPauseRef = useRef(false);
+  const lastSpeechAtRef = useRef(0);
+  const heardSpeechRef = useRef(false);
 
   const getSpokenDuration = () => {
     if (!speakingStartRef.current) return 0;
     return (Date.now() - speakingStartRef.current) / 1000;
   };
+
+  /** Stop the mic and send whatever was said. Used by the Pause button and the silence auto-send. */
+  const stopListeningAndSend = () => {
+    const text = accumulatedRef.current.trim();
+    const duration = getSpokenDuration();
+    if (Number.isFinite(duration) && duration > 0) setAccumulatedPracticeSeconds((prev) => prev + duration);
+    speakingStartRef.current = null;
+
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      sentByPauseRef.current = true;
+      sentByPauseRef.duration = duration;
+      recorder.stop();
+    } else {
+      try { recognitionRef.current?.abort(); } catch (_) {}
+      setListening(false);
+      if (text) {
+        sendToBackend(text, duration);
+      } else {
+        setError('No speech detected. Speak for a moment, then pause — or wait 4 seconds of silence.');
+        setStatus('idle');
+      }
+      return;
+    }
+
+    try { recognitionRef.current?.abort(); } catch (_) {}
+    setListening(false);
+  };
+  const stopListeningAndSendRef = useRef(stopListeningAndSend);
+  stopListeningAndSendRef.current = stopListeningAndSend;
+
+  const startListening = () => {
+    if (!SpeechRecognition || !window.isSecureContext) return;
+    if (listeningRef.current) return;
+    if (autoListenTimerRef.current) {
+      clearTimeout(autoListenTimerRef.current);
+      autoListenTimerRef.current = null;
+    }
+    sentByPauseRef.current = false;
+    sentByPauseRef.duration = 0;
+    heardSpeechRef.current = false;
+    lastSpeechAtRef.current = Date.now();
+    speakingStartRef.current = Date.now();
+    setError(null);
+    pausedRef.current = false;
+    setPaused(false);
+    accumulatedRef.current = '';
+    audioChunksRef.current = [];
+    setStatus('listening');
+    setListening(true);
+  };
+
+  /* Freeze pause: stop capturing without sending, so the user can think mid-answer. */
+  const pauseListening = () => {
+    if (!listeningRef.current || pausedRef.current) return;
+    const d = getSpokenDuration();
+    if (Number.isFinite(d) && d > 0) setAccumulatedPracticeSeconds((prev) => prev + d);
+    speakingStartRef.current = null;
+    setSegmentElapsedLive(0);
+    pausedRef.current = true;
+    setPaused(true);
+    setStatus('paused');
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
+    } catch (_) {}
+    try {
+      recognitionRef.current?.stop();
+    } catch (_) {}
+  };
+
+  /* Resume from a freeze pause: continue the same answer where the user left off. */
+  const resumeListening = () => {
+    if (!listeningRef.current || !pausedRef.current) return;
+    pausedRef.current = false;
+    setPaused(false);
+    setStatus('listening');
+    speakingStartRef.current = Date.now();
+    lastSpeechAtRef.current = Date.now();
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
+    } catch (_) {}
+    try {
+      recognitionRef.current?.start();
+    } catch (_) {}
+  };
+
+  /* Auto-start the mic a short moment after the AI stops speaking (hands-free turn-taking). */
+  const scheduleAutoListen = () => {
+    if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
+    autoListenTimerRef.current = setTimeout(() => {
+      autoListenTimerRef.current = null;
+      if (listeningRef.current) return;
+      if (endedByUserRef.current) return;
+      if (statusRef.current === 'sending' || statusRef.current === 'playing') return;
+      if (!SpeechRecognition || !window.isSecureContext) return;
+      startListening();
+    }, AUTO_LISTEN_AFTER_AI_MS);
+  };
+  scheduleAutoListenRef.current = scheduleAutoListen;
+
+  useEffect(() => () => {
+    if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
+  }, []);
 
   const toggleListening = () => {
     if (!SpeechRecognition) {
@@ -338,49 +477,79 @@ export default function TalkingAgent() {
       setError('Microphone requires https or localhost.');
       return;
     }
-    if (listening) {
-      const text = accumulatedRef.current.trim();
-      const duration = getSpokenDuration();
-      if (Number.isFinite(duration) && duration > 0) setAccumulatedPracticeSeconds((prev) => prev + duration);
-      speakingStartRef.current = null;
-
-      const recorder = mediaRecorderRef.current;
-      if (recorder && recorder.state !== 'inactive') {
-        sentByPauseRef.current = true;
-        sentByPauseRef.duration = duration;
-        recorder.stop();
-      } else {
-        try { recognitionRef.current?.abort(); } catch (_) {}
-        setListening(false);
-        if (text) {
-          sendToBackend(text, duration);
-        } else {
-          setError('No speech detected. Say something, then click Pause.');
-          setStatus('idle');
-        }
-        return;
-      }
-
-      try { recognitionRef.current?.abort(); } catch (_) {}
-      setListening(false);
+    if (!listening) {
+      startListening();
+    } else if (paused) {
+      resumeListening();
     } else {
-      sentByPauseRef.current = false;
-      sentByPauseRef.duration = 0;
-      speakingStartRef.current = Date.now();
-      setError(null);
-      accumulatedRef.current = '';
-      audioChunksRef.current = [];
-      setStatus('listening');
-      setListening(true);
+      pauseListening();
     }
   };
 
   useEffect(() => {
     if (!listening) return;
     let recorder;
+    let audioContext;
+    let silenceCheckId;
+    let cancelled = false;
+    let speechFrames = 0;
+
     const startRecording = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        /* Mic-level silence detection: after speech + 4s quiet → auto-pause & AI replies. */
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioContext = new Ctx();
+          if (audioContext.state === 'suspended') {
+            try { await audioContext.resume(); } catch (_) {}
+          }
+          const source = audioContext.createMediaStreamSource(stream);
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          source.connect(analyser);
+          const samples = new Uint8Array(analyser.fftSize);
+          silenceCheckId = window.setInterval(() => {
+            if (!listeningRef.current || pausedRef.current) return;
+            analyser.getByteTimeDomainData(samples);
+            let sum = 0;
+            for (let i = 0; i < samples.length; i++) {
+              const v = (samples[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / samples.length);
+            if (rms >= SPEECH_RMS_THRESHOLD) {
+              speechFrames += 1;
+              if (speechFrames >= 2) {
+                heardSpeechRef.current = true;
+                lastSpeechAtRef.current = Date.now();
+              }
+            } else {
+              speechFrames = 0;
+              if (
+                heardSpeechRef.current &&
+                Date.now() - lastSpeechAtRef.current >= SILENCE_AUTO_SEND_MS
+              ) {
+                heardSpeechRef.current = false;
+                stopListeningAndSendRef.current();
+              }
+            }
+          }, 100);
+        } catch (_) {
+          silenceCheckId = window.setInterval(() => {
+            if (!listeningRef.current || pausedRef.current || !heardSpeechRef.current) return;
+            if (Date.now() - lastSpeechAtRef.current >= SILENCE_AUTO_SEND_MS) {
+              heardSpeechRef.current = false;
+              stopListeningAndSendRef.current();
+            }
+          }, 250);
+        }
+
         recorder = new MediaRecorder(stream);
         audioChunksRef.current = [];
         recorder.ondataavailable = (e) => {
@@ -401,7 +570,7 @@ export default function TalkingAgent() {
           } else if (text) {
             sendToBackend(text, duration);
           } else {
-            setError('No speech detected. Say something, then click Pause.');
+            setError('No speech detected. Speak for a moment, then pause — or wait 4 seconds of silence.');
             setStatus('idle');
           }
         };
@@ -414,6 +583,11 @@ export default function TalkingAgent() {
     };
     startRecording();
     return () => {
+      cancelled = true;
+      if (silenceCheckId) window.clearInterval(silenceCheckId);
+      if (audioContext) {
+        try { audioContext.close(); } catch (_) {}
+      }
       if (recorder && recorder.state !== 'inactive') {
         try { recorder.stop(); } catch (_) {}
       }
@@ -452,8 +626,51 @@ export default function TalkingAgent() {
 
   const isAiSpeaking = status === 'playing';
   const isProcessing = status === 'sending';
-  const isUserSpeaking = listening && status === 'listening';
+  const isUserSpeaking = listening && !paused && status === 'listening';
+  const isPaused = listening && paused;
   const isBootstrapping = !openingReady;
+
+  if (!sessionStarted) {
+    return (
+      <div className="tw-voice-page">
+        <div className="tw-voice-body">
+          <main className="tw-voice-main">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 shadow-sm ring-1 ring-black/5">
+                <SparkIcon className="text-slate-800" />
+              </span>
+              <p className="text-sm font-semibold text-slate-900">Random Talking Agent</p>
+            </div>
+
+            <section className="tw-voice-card tw-voice-card--unified">
+              <div className="tw-voice-ai-display">
+                <div className="tw-voice-ai-display-label">
+                  <span className="tw-voice-ai-dot" />
+                  Ready when you are
+                </div>
+                <p className="tw-voice-ai-display-text">
+                  <span className="tw-voice-loading-lead">Practice a free-flowing conversation.</span>
+                  <span className="tw-voice-loading-detail">When you click Start, we&apos;ll pick a topic from your interests and the AI will begin asking you questions.</span>
+                </p>
+              </div>
+
+              <div className="tw-voice-controls">
+                <button
+                  type="button"
+                  className="tw-voice-btn-start"
+                  onClick={() => setSessionStarted(true)}
+                >
+                  <PlayIcon style={{ width: 18, height: 18 }} /> Start Session
+                </button>
+              </div>
+
+              {error && <div className="tw-voice-error">{error}</div>}
+            </section>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tw-voice-page">
@@ -508,12 +725,17 @@ export default function TalkingAgent() {
                   <span className="tw-voice-status-dot" aria-hidden />
                   Listening…
                 </div>
-                <p className="tw-voice-hint">When you&apos;re done speaking, click <strong>Pause</strong> to send your response.</p>
+                <p className="tw-voice-hint">Stop talking when you&apos;re done — after 4 seconds of silence the AI replies. Need a moment to think? Tap <strong>Pause</strong> to freeze everything, then <strong>Continue</strong>.</p>
               </div>
             )}
 
             <div className="tw-voice-user-display">
-              {isUserSpeaking ? (
+              {isPaused ? (
+                <p className="tw-voice-user-display-placeholder tw-voice-user-display--start-cta">
+                  <span className="tw-voice-listening-icon" aria-hidden>⏸️</span>
+                  Paused — take your time to think. Tap <strong>Continue</strong> to pick up right where you left off.
+                </p>
+              ) : isUserSpeaking ? (
                 <p className="tw-voice-user-display-placeholder tw-voice-user-display--listening">
                   <span className="tw-voice-listening-icon" aria-hidden>🎧</span>
                   I&apos;m listening to you — speak naturally.
@@ -522,7 +744,7 @@ export default function TalkingAgent() {
                 <p className="tw-voice-user-display-placeholder tw-voice-user-display--start-cta">
                   {isBootstrapping
                     ? <>Loading in progress. When the prompt appears, tap <strong>Start Speaking</strong>.</>
-                    : <>Click <strong>Start Speaking</strong> when you&apos;re ready.</>}
+                    : <>The mic starts automatically after the AI asks — or tap <strong>Start Speaking</strong> to begin now.</>}
                 </p>
               )}
             </div>
@@ -530,11 +752,11 @@ export default function TalkingAgent() {
             <div className="tw-voice-controls">
               <button
                 type="button"
-                className={listening ? 'tw-voice-btn-pause' : 'tw-voice-btn-start'}
+                className={isUserSpeaking ? 'tw-voice-btn-pause' : 'tw-voice-btn-start'}
                 onClick={toggleListening}
                 disabled={status === 'sending' || status === 'playing' || !openingReady}
               >
-                {listening ? (<><PauseIcon style={{ width: 18, height: 18 }} /> Pause</>) : (<><PlayIcon style={{ width: 18, height: 18 }} /> Start Speaking</>)}
+                {!listening ? (<><PlayIcon style={{ width: 18, height: 18 }} /> Start Speaking</>) : paused ? (<><PlayIcon style={{ width: 18, height: 18 }} /> Continue</>) : (<><PauseIcon style={{ width: 18, height: 18 }} /> Pause</>)}
               </button>
 
               {conversationId && (

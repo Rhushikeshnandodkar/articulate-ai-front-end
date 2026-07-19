@@ -1201,6 +1201,64 @@
   font-size: 0.875rem;
 }
 
+.tw-dashboard-daypass-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.12) 0%, rgba(5, 150, 105, 0.04) 100%);
+}
+
+.tw-dashboard-daypass-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.tw-dashboard-daypass-badge {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  color: #047857;
+  background: rgba(5, 150, 105, 0.16);
+}
+
+.tw-dashboard-daypass-text {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.tw-dashboard-quota-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .tw-dashboard-daypass-callout {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+  .tw-dashboard-daypass-callout .tw-dashboard-quota-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 600px) {
   .tw-dashboard-quota {
     flex-direction: column;

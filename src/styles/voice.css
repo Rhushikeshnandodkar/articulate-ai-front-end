@@ -778,6 +778,26 @@
   background: linear-gradient(135deg, rgba(167, 237, 2, 0.15) 0%, rgba(167, 237, 2, 0.05) 100%);
 }
 
+.tw-voice-upgrade-plan-card--featured {
+  position: relative;
+  border: 1px solid rgba(5, 150, 105, 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.25);
+}
+
+.tw-voice-upgrade-plan-flag {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  color: #047857;
+  background: rgba(5, 150, 105, 0.16);
+}
+
 [data-theme="light"] .tw-voice-upgrade-plan-card:first-child {
   background: linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(5, 150, 105, 0.05) 100%);
 }

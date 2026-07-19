@@ -86,34 +86,43 @@ export default function Subscriptions() {
           <p className="tw-muted">No plans configured yet.</p>
         ) : (
           <div className="tw-profile-plans-grid tw-subscriptions-plans">
-            {plans.map((plan) => (
-              <div key={plan.id} className="tw-profile-plan-card">
-                <div className="tw-profile-plan-head">
-                  <h3 className="tw-profile-plan-name">{plan.name}</h3>
-                  <p className="tw-profile-plan-price">
-                    {plan.price === 0 ? 'Free' : `₹${plan.price.toFixed(2)}`}{' '}
-                    <span>/ {plan.duration} days</span>
-                  </p>
+            {plans.map((plan) => {
+              const isDayPass = plan.plan_type === 'day_pass';
+              return (
+                <div key={plan.id} className="tw-profile-plan-card">
+                  <div className="tw-profile-plan-head">
+                    <h3 className="tw-profile-plan-name">{plan.name}</h3>
+                    <p className="tw-profile-plan-price">
+                      {plan.price === 0 ? 'Free' : `₹${plan.price.toFixed(2)}`}{' '}
+                      <span>{isDayPass ? '/ 1 day' : `/ ${plan.duration} days`}</span>
+                    </p>
+                  </div>
+                  <div
+                    className="tw-profile-plan-desc"
+                    dangerouslySetInnerHTML={{ __html: plan.description }}
+                  />
+                  {isDayPass ? (
+                    <p className="tw-profile-plan-meta">
+                      <strong>Unlimited practice</strong> until midnight on the day you buy
+                    </p>
+                  ) : (
+                    typeof plan.limit_minutes === 'number' && (
+                      <p className="tw-profile-plan-meta">
+                        Includes <strong>{plan.limit_minutes}</strong> minutes of practice per month
+                      </p>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    className="tw-profile-plan-btn"
+                    onClick={() => handleSelect(plan.id)}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Selecting…' : isDayPass ? 'Get Day Pass' : 'Select plan'}
+                  </button>
                 </div>
-                <div
-                  className="tw-profile-plan-desc"
-                  dangerouslySetInnerHTML={{ __html: plan.description }}
-                />
-                {typeof plan.limit_minutes === 'number' && (
-                  <p className="tw-profile-plan-meta">
-                    Includes <strong>{plan.limit_minutes}</strong> minutes of practice per month
-                  </p>
-                )}
-                <button
-                  type="button"
-                  className="tw-profile-plan-btn"
-                  onClick={() => handleSelect(plan.id)}
-                  disabled={submitting}
-                >
-                  {submitting ? 'Selecting…' : 'Select plan'}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

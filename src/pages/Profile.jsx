@@ -338,7 +338,9 @@ export default function Profile() {
               <strong>{currentPlan ? currentPlan.name : profile?.subscription_plan ? 'Active plan' : 'Free'}</strong>
               {profile?.subscription_active && profile?.subscription_expiry && (
                 <span style={{ fontWeight: 400, marginLeft: 8, fontSize: '0.85em', opacity: 0.7 }}>
-                  (expires {new Date(profile.subscription_expiry).toLocaleDateString()})
+                  {currentPlan?.plan_type === 'day_pass'
+                    ? '(Day Pass — valid until midnight tonight)'
+                    : `(expires ${new Date(profile.subscription_expiry).toLocaleDateString()})`}
                 </span>
               )}
               {profile?.subscription_plan && !profile?.subscription_active && (
@@ -353,8 +355,12 @@ export default function Profile() {
                 const isCurrent = currentPlanId === plan.id;
                 const isSubmitting = planSubmittingId === plan.id;
                 const isFreePlan = plan.price === 0;
-                const isOnPaidPlan = currentPlan && currentPlan.price > 0;
-                const hideSwitchToFree = isFreePlan && isOnPaidPlan;
+                const isDayPass = plan.plan_type === 'day_pass';
+                const isOnActivePaidPlan = Boolean(profile?.subscription_active) && currentPlan && currentPlan.price > 0;
+                const hideSwitchToFree = isFreePlan && currentPlan && currentPlan.price > 0;
+                // Backend rejects a Day Pass purchase while a paid plan is active,
+                // so don't offer the button in that state.
+                const dayPassUnavailable = isDayPass && !isCurrent && isOnActivePaidPlan;
                 return (
                   <div
                     key={plan.id}
@@ -366,30 +372,43 @@ export default function Profile() {
                     </div>
                     <p className="tw-profile-plan-price">
                       {plan.price === 0 ? 'Free' : `₹${plan.price.toFixed(2)}`}{' '}
-                      <span>/ {plan.duration} days</span>
+                      <span>{isDayPass ? '/ 1 day' : `/ ${plan.duration} days`}</span>
                     </p>
                     <div
                       className="tw-profile-plan-desc"
                       dangerouslySetInnerHTML={{ __html: plan.description }}
                     />
-                    {typeof plan.limit_minutes === 'number' && (
+                    {isDayPass ? (
                       <p className="tw-profile-plan-meta">
-                        Includes <strong>{plan.limit_minutes}</strong> minutes of practice per month
+                        <strong>Unlimited practice</strong> until midnight on the day you buy
                       </p>
+                    ) : (
+                      typeof plan.limit_minutes === 'number' && (
+                        <p className="tw-profile-plan-meta">
+                          Includes <strong>{plan.limit_minutes}</strong> minutes of practice per month
+                        </p>
+                      )
                     )}
-                    {!hideSwitchToFree && (
+                    {!hideSwitchToFree && !dayPassUnavailable && (
                       <button
                         type="button"
                         className="tw-profile-plan-btn"
                         onClick={() => !isCurrent && handlePlanSelect(plan.id)}
                         disabled={isCurrent || isSubmitting}
                       >
-                        {isCurrent ? 'Current plan' : isSubmitting ? 'Updating…' : 'Switch to this plan'}
+                        {isCurrent
+                          ? isDayPass ? 'Active today' : 'Current plan'
+                          : isSubmitting ? 'Updating…' : isDayPass ? 'Get Day Pass' : 'Switch to this plan'}
                       </button>
                     )}
                     {hideSwitchToFree && (
                       <p className="tw-profile-plan-meta tw-profile-plan-no-downgrade">
                         Your plan will auto-expire after the billing period.
+                      </p>
+                    )}
+                    {dayPassUnavailable && (
+                      <p className="tw-profile-plan-meta tw-profile-plan-no-downgrade">
+                        Not needed — you already have an active plan.
                       </p>
                     )}
                   </div>

@@ -230,6 +230,7 @@ export default function Dashboard() {
       : profile?.subscription_plan || null;
   const currentPlan = plans.find((p) => p.id === currentPlanId);
   const isFreePlan = !currentPlan || currentPlan.price === 0;
+  const daypassPlan = plans.find((p) => p.plan_type === 'day_pass');
 
   const loadTopics = () => {
     if (!isAuthenticated) return;
@@ -636,8 +637,25 @@ export default function Dashboard() {
                   ? `Only ${minutesRemaining} minutes remaining this month. Upgrade now for more practice time and premium features.`
                   : `You've used ${minutesUsed} of ${minutesLimit} free minutes this month. Upgrade to unlock more practice time.`}
             </p>
-            <Link to="/profile" className="tw-btn-primary tw-dashboard-quota-btn">
-              Upgrade Now
+            {daypassPlan && (
+              <div className="tw-dashboard-daypass-callout">
+                <div className="tw-dashboard-daypass-info">
+                  <span className="tw-dashboard-daypass-badge">Best value</span>
+                  <span className="tw-dashboard-daypass-text">
+                    <strong>{daypassPlan.name}</strong> — unlimited practice for a day at just ₹{daypassPlan.price.toFixed(0)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="tw-btn-primary tw-dashboard-quota-btn"
+                  onClick={() => setShowQuotaExceededModal(true)}
+                >
+                  Get {daypassPlan.name}
+                </button>
+              </div>
+            )}
+            <Link to="/profile" className="tw-dashboard-quota-link">
+              See all plans
             </Link>
           </div>
         </section>
@@ -704,12 +722,14 @@ export default function Dashboard() {
           <span className="tw-dashboard-stat-value">{profile?.total_minutes_spoken ?? 0}</span>
           <span className="tw-dashboard-stat-label">Minutes</span>
         </div>
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">
-            {minutesUsed}/{minutesLimit}
-          </span>
-          <span className="tw-dashboard-stat-label">This month (min)</span>
-        </div>
+        {isFreePlan && (
+          <div className="tw-dashboard-stat-box">
+            <span className="tw-dashboard-stat-value">
+              {minutesUsed}/{minutesLimit}
+            </span>
+            <span className="tw-dashboard-stat-label">This month (min)</span>
+          </div>
+        )}
         <div className="tw-dashboard-stat-box">
           <span className="tw-dashboard-stat-value">{profile?.average_filler_words ?? 0}</span>
           <span className="tw-dashboard-stat-label">Filler words</span>
@@ -793,8 +813,18 @@ export default function Dashboard() {
               You&apos;ve used all your free minutes this month. Upgrade to get more practice time and premium features.
             </p>
             <div className="tw-voice-upgrade-plans">
-              {plans.filter((p) => p.price > 0).map((plan) => (
-                <div key={plan.id} className="tw-voice-upgrade-plan-card">
+              {plans
+                .filter((p) => p.price > 0)
+                .slice()
+                .sort((a, b) => (b.plan_type === 'day_pass' ? 1 : 0) - (a.plan_type === 'day_pass' ? 1 : 0))
+                .map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`tw-voice-upgrade-plan-card ${plan.plan_type === 'day_pass' ? 'tw-voice-upgrade-plan-card--featured' : ''}`}
+                >
+                  {plan.plan_type === 'day_pass' && (
+                    <span className="tw-voice-upgrade-plan-flag">Best value</span>
+                  )}
                   <h3 className="tw-voice-upgrade-plan-name">{plan.name}</h3>
                   <p className="tw-voice-upgrade-plan-price">
                     ₹{plan.price.toFixed(2)} <span>/ {plan.duration} days</span>
