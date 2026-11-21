@@ -444,14 +444,14 @@
 }
 
 .tw-detail-modal-highlight {
-  background: linear-gradient(135deg, rgba(167, 237, 2, 0.2) 0%, rgba(167, 237, 2, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2) 0%, rgba(var(--accent-rgb), 0.08) 100%);
   border: none;
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
 }
 
 [data-theme="light"] .tw-detail-modal-highlight {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.18) 0%, rgba(5, 150, 105, 0.06) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18) 0%, rgba(var(--accent-rgb), 0.06) 100%);
 }
 
 .tw-detail-modal-highlight .tw-detail-modal-text {

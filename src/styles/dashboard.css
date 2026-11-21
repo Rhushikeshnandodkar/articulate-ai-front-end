@@ -307,7 +307,7 @@
 
 .tw-dashboard-badge-gold {
   background: radial-gradient(circle at 30% 30%, #fde68a, #b45309);
-  color: #111827;
+  color: #131316;
 }
 
 .tw-dashboard-badge-diamond {
@@ -654,9 +654,9 @@
 }
 
 .tw-dashboard-stat-box:nth-child(1) {
-  background: linear-gradient(135deg, rgba(167, 237, 2, 0.2) 0%, rgba(167, 237, 2, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2) 0%, rgba(var(--accent-rgb), 0.08) 100%);
 }
-.tw-dashboard-stat-box:nth-child(1)::before { background: #A7ED02; }
+.tw-dashboard-stat-box:nth-child(1)::before { background: var(--accent); }
 
 .tw-dashboard-stat-box:nth-child(2) {
   background: linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(20, 184, 166, 0.08) 100%);
@@ -692,7 +692,7 @@
   margin-bottom: 0.35rem;
 }
 
-.tw-dashboard-stat-box:nth-child(1) .tw-dashboard-stat-value { color: #A7ED02; }
+.tw-dashboard-stat-box:nth-child(1) .tw-dashboard-stat-value { color: var(--accent); }
 .tw-dashboard-stat-box:nth-child(2) .tw-dashboard-stat-value { color: #14B8A6; }
 .tw-dashboard-stat-box:nth-child(3) .tw-dashboard-stat-value { color: #3B82F6; }
 .tw-dashboard-stat-box:nth-child(4) .tw-dashboard-stat-value { color: #A855F7; }
@@ -1210,8 +1210,8 @@
   padding: 0.85rem 1rem;
   margin-bottom: 0.75rem;
   border-radius: 10px;
-  border: 1px solid rgba(5, 150, 105, 0.35);
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.12) 0%, rgba(5, 150, 105, 0.04) 100%);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.04) 100%);
 }
 
 .tw-dashboard-daypass-info {
@@ -1229,8 +1229,8 @@
   letter-spacing: 0.04em;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  color: #047857;
-  background: rgba(5, 150, 105, 0.16);
+  color: var(--accent-strong);
+  background: rgba(var(--accent-rgb), 0.16);
 }
 
 .tw-dashboard-daypass-text {

@@ -2,504 +2,231 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getPlans } from '../services/api';
-import AuthLogo from '../components/AuthLogo';
-import { Flame, Layers, Sparkles, FileText, Mic, BarChart3, Menu, X } from "lucide-react";
-import './Landing.css';
-
-const features = [
-  {
-    icon: <Mic size={22} />,
-    title: "AI Voice Practice",
-    desc: "Practice anytime with an intelligent AI partner that adapts to your skill level and responds naturally.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    icon: <Layers size={22} />,
-    title: "Personalized Topics",
-    desc: "Choose from topics tailored to your interests — tech, career, sports, business, and more.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    icon: <BarChart3 size={22} />,
-    title: "Real-time Feedback",
-    desc: "Get instant analysis on filler words, speaking pace (WPM), and confidence metrics after each session.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    icon: <Sparkles size={22} />,
-    title: "Badge System",
-    desc: "Earn achievements from Bronze to Diamond as you progress. Celebrate milestones and stay motivated.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    icon: <Flame size={22} />,
-    title: "Streak Tracking",
-    desc: "Build daily practice habits with streak tracking. Never lose momentum with gentle reminders.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    icon: <FileText size={22} />,
-    title: "Practice History",
-    desc: "Review past sessions, transcripts, and track your improvement over time with detailed analytics.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-];
+import { useTheme } from '../contexts/ThemeContext';
+import { BrandMark } from '../components/AuthLayout';
+import {
+  ArrowRightIcon, BookIcon, ChartIcon, CheckIcon, FlameIcon, MicIcon, MoonIcon, SparkIcon, SunIcon, TrophyIcon,
+} from '../components/icons';
+import '../styles/landing.css';
 
 const steps = [
-  {
-    number: "1",
-    icon: <Layers size={20} />,
-    title: "Choose Your Topic",
-    desc: "Select from personalized topics based on your goals—interview prep, public speaking, sales pitches, or casual conversation practice.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    number: "2",
-    icon: <Mic size={20} />,
-    title: "Speak with AI",
-    desc: "Have a natural conversation with our AI coach. Practice interviews, presentations, or difficult discussions in a safe environment.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
-  {
-    number: "3",
-    icon: <BarChart3 size={20} />,
-    title: "Get Detailed Feedback",
-    desc: "Receive actionable insights on your filler words, speaking pace, confidence levels, and personalized tips to improve.",
-    color: "bg-[#A7ED02]/10 text-[#A7ED02]",
-  },
+  { title: 'Pick a topic', desc: 'Choose from prompts matched to your goal: interviews, presentations, everyday conversation.' },
+  { title: 'Talk with your coach', desc: 'Answer out loud. The AI listens, asks follow-ups and keeps the conversation going.' },
+  { title: 'Read your report', desc: 'See your pace, filler words and pauses, with specific tips for your next session.' },
 ];
+
+const features = [
+  { Icon: MicIcon, title: 'Real voice practice', desc: 'Speak out loud with an AI partner that responds naturally, not a text chatbot.' },
+  { Icon: ChartIcon, title: 'Measurable feedback', desc: 'Words per minute, filler words and pauses for every session, so progress is visible.' },
+  { Icon: SparkIcon, title: 'Better ways to say it', desc: 'Tap any answer for a clearer version and spoken-grammar fixes.' },
+  { Icon: BookIcon, title: 'Topics that fit you', desc: 'Prompts picked from your interests and goals, from casual to interview-level.' },
+  { Icon: FlameIcon, title: 'Daily streaks', desc: 'A short daily topic and streak tracking help you build the habit.' },
+  { Icon: TrophyIcon, title: 'Badges as you improve', desc: 'Move from Bronze to Diamond as your table-topic score grows.' },
+];
+
+function ProductPreview() {
+  return (
+    <div className="lp-preview" aria-hidden>
+      <div className="lp-preview-bar"><span /><span /><span /></div>
+      <div className="lp-preview-body">
+        <div className="lp-preview-head">
+          <div>
+            <div className="lp-preview-eyebrow">Session report</div>
+            <div className="lp-preview-title">Tell me about a hard moment at work</div>
+            <div className="lp-preview-meta">3m 30s · 4 answers</div>
+          </div>
+          <div className="lp-preview-verdict">Good</div>
+        </div>
+        <div className="lp-preview-feedback">
+          <SparkIcon />
+          <p>Strong example with a clear result. Replace &ldquo;um&rdquo; with a short silent pause when you switch ideas.</p>
+        </div>
+        <div className="lp-preview-stats">
+          <div><span>Pace</span><strong>136 <small>wpm</small></strong></div>
+          <div><span>Filler words</span><strong>4</strong></div>
+          <div><span>Pauses</span><strong>3</strong></div>
+        </div>
+        <div className="lp-preview-pace">
+          <div className="lp-preview-track"><span className="lp-ideal" /><span className="lp-marker" /></div>
+          <div className="lp-preview-scale"><span>60</span><span>Ideal 120–150 wpm</span><span>210</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { theme, toggleTheme } = useTheme();
   const [plans, setPlans] = useState([]);
-  const [plansLoading, setPlansLoading] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [plansLoading, setPlansLoading] = useState(true);
 
   useEffect(() => {
-    setPlansLoading(true);
     getPlans()
-      .then((data) => {
-        setPlans(Array.isArray(data?.plans) ? data.plans : []);
-      })
+      .then((data) => setPlans(Array.isArray(data?.plans) ? data.plans : []))
       .catch(() => setPlans([]))
       .finally(() => setPlansLoading(false));
   }, []);
 
-  const starterPlan = plans.find((p) => Number(p.price) === 0) || plans[0];
-
-  const scrollToSection = (id) => {
-    setMobileMenuOpen(false);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
+  const dayPass = plans.find((p) => p.plan_type === 'day_pass');
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  const primaryCta = isAuthenticated
+    ? <Link to="/dashboard" className="ui-btn ui-btn-primary lp-btn">Go to your dashboard <ArrowRightIcon /></Link>
+    : <Link to="/signup" className="ui-btn ui-btn-primary lp-btn">Start practicing free <ArrowRightIcon /></Link>;
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white pb-[env(safe-area-inset-bottom)]">
-      <div className="w-full">
-      {/* NAVBAR */}
-      <nav className="w-full border-b border-gray-800">
-        <div className="w-[95%] md:w-[85%] mx-auto flex items-center justify-between px-4 md:px-8 py-4 md:py-5">
-        <div className="flex items-center gap-2 md:gap-3">
-          <AuthLogo className="w-7 h-7 md:w-8 md:h-8 text-[#A7ED02]" />
-          <span className="text-lg md:text-xl font-semibold">
-            articulate<span className="text-[#A7ED02]">.ai</span>
-          </span>
-        </div>
-
-        <div className="hidden md:flex gap-8 text-gray-300 text-base">
-          <button type="button" onClick={() => scrollToSection('features')} className="hover:text-white cursor-pointer bg-transparent border-none p-0">
-            Features
-          </button>
-          <button type="button" onClick={() => scrollToSection('how-it-works')} className="hover:text-white cursor-pointer bg-transparent border-none p-0">
-            How It Works
-          </button>
-          <button type="button" onClick={() => scrollToSection('pricing')} className="hover:text-white cursor-pointer bg-transparent border-none p-0">
-            Pricing
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="md:hidden p-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white"
-            aria-label="Open menu"
-          >
-            <Menu size={24} />
-          </button>
-          <Link
-            to="/signup"
-            className="hidden md:inline-block bg-[#A7ED02] hover:opacity-90 text-black font-medium px-5 py-2 rounded-lg text-base"
-          >
-            Start Practicing Free
-          </Link>
-        </div>
-        </div>
-      </nav>
-
-      {/* MOBILE SIDEBAR */}
-      {mobileMenuOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/60 z-40 md:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-          <aside className="fixed top-0 right-0 bottom-0 w-64 max-w-[85vw] bg-[#0A0A0A] border-l border-gray-800 z-50 md:hidden flex flex-col p-6">
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-lg font-semibold">Menu</span>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white"
-                aria-label="Close menu"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <nav className="flex flex-col gap-1">
-              <button type="button" onClick={() => scrollToSection('features')} className="text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white font-medium">
-                Features
-              </button>
-              <button type="button" onClick={() => scrollToSection('how-it-works')} className="text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white font-medium">
-                How It Works
-              </button>
-              <button type="button" onClick={() => scrollToSection('pricing')} className="text-left py-3 px-4 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white font-medium">
-                Pricing
-              </button>
-            </nav>
-            <Link
-              to="/signup"
-              onClick={() => setMobileMenuOpen(false)}
-              className="mt-6 bg-[#A7ED02] hover:opacity-90 text-black font-medium py-3 rounded-lg text-center"
-            >
-              Start Practicing Free
-            </Link>
-          </aside>
-        </>
-      )}
-
-      {/* HERO SECTION */}
-    {/* HERO SECTION */}
-<div className="w-[95%] md:w-[85%] mx-auto py-12 md:py-20 text-center flex flex-col items-center px-2">
-
-{/* TOP BADGE */}
-<span className="text-xs md:text-sm bg-gray-800 text-gray-300 px-2.5 md:px-3 py-1 rounded-full">
-Improve Your Communication and Public Speaking Skills.
-</span>
-
-{/* HEADING */}
-<h1 className="mt-4 md:mt-6 text-[1.75rem] sm:text-[2rem] md:text-[3.25rem] font-bold leading-tight max-w-7xl">
-Improve Your Communication Skills. <br />
-  <span className="text-[#A7ED02]">Speak Clearly & Confidently.</span> <br />
-  Grow Your Personality.
-</h1>
-
-{/* DESCRIPTION */}
-<p className="mt-4 md:mt-6 text-gray-400 max-w-2xl text-sm md:text-lg">
-  Stop rehearsing alone in front of mirrors. Practice with AI that
-  gives you real feedback on filler words, pace, and confidence —
-  so you’re ready when it matters.
-</p>
-
-{/* BUTTONS */}
-<div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-8 w-full sm:w-auto">
-  {isAuthenticated ? (
-    <Link
-      to="/dashboard"
-      className="bg-[#A7ED02] hover:opacity-90 text-black px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium text-sm md:text-base text-center"
-    >
-      Go to Dashboard →
-    </Link>
-  ) : (
-    <>
-      <Link
-        to="/signup"
-        className="bg-[#A7ED02] hover:opacity-90 text-black px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium text-sm md:text-base text-center"
-      >
-        Start Free Practice →
-      </Link>
-
-      <button
-        type="button"
-        onClick={() => scrollToSection('how-it-works')}
-        className="border border-gray-700 px-5 py-2.5 md:px-6 md:py-3 rounded-lg text-gray-300 hover:bg-gray-800 text-sm md:text-base"
-      >
-        See How It Works
-      </button>
-    </>
-  )}
-</div>
-
-{/* DAY PASS HIGHLIGHT */}
-<button
-  type="button"
-  onClick={() => scrollToSection('pricing')}
-  className="mt-5 md:mt-6 inline-flex items-center gap-2 bg-[#A7ED02]/10 border border-[#A7ED02]/40 text-[#A7ED02] px-4 py-1.5 md:px-5 md:py-2 rounded-full text-xs md:text-sm font-medium hover:bg-[#A7ED02]/20 transition cursor-pointer"
->
-  ⚡ Full access starts at just ₹15 for one day — no subscription needed
-</button>
-
-</div>
-      <section id="features" className="bg-[#0A0A0A] text-white px-4 md:px-16 py-12 md:py-20">
-      
-      {/* TOP TEXT */}
-      <div className="w-[95%] md:w-[85%] mx-auto text-center max-w-2xl">
-        <span className="text-xs md:text-sm bg-[#A7ED02]/10 text-[#A7ED02] px-3 md:px-4 py-1 rounded-full">
-          Powerful Features
-        </span>
-
-        <h2 className="mt-4 md:mt-6 text-2xl md:text-4xl font-bold">
-          Everything You Need to{" "}
-          <span className="text-[#A7ED02]">Improve</span>
-        </h2>
-
-        <p className="mt-3 md:mt-4 text-gray-400 text-sm md:text-lg">
-          Our AI-powered platform gives you the tools and insights to become a
-          more confident communicator
-        </p>
-      </div>
-
-      {/* GRID */}
-      <div className="w-[95%] md:w-[85%] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mt-10 md:mt-14">
-        {features.map((feature, i) => (
-          <div
-            key={i}
-            className="bg-[#0A0A0A] border border-gray-800 rounded-xl p-4 md:p-6 hover:border-[#A7ED02]/40 transition"
-          >
-            {/* ICON */}
-            <div
-              className={`w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg ${feature.color}`}
-            >
-              {feature.icon}
-            </div>
-
-            {/* TITLE */}
-            <h3 className="mt-3 md:mt-4 text-base md:text-lg font-semibold">
-              {feature.title}
-            </h3>
-
-            {/* DESC */}
-            <p className="mt-1.5 md:mt-2 text-gray-400 text-sm md:text-base">
-              {feature.desc}
-            </p>
+    <div className="lp">
+      <header className="lp-nav">
+        <div className="lp-container lp-nav-inner">
+          <BrandMark />
+          <nav className="lp-links" aria-label="Sections">
+            <button type="button" onClick={() => scrollTo('how')}>How it works</button>
+            <button type="button" onClick={() => scrollTo('features')}>Features</button>
+            <button type="button" onClick={() => scrollTo('pricing')}>Pricing</button>
+          </nav>
+          <div className="lp-nav-actions">
+            <button type="button" className="ui-icon-btn is-plain" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </button>
+            {isAuthenticated ? (
+              <Link to="/dashboard" className="ui-btn ui-btn-primary ui-btn-sm">Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/login" className="ui-btn ui-btn-ghost ui-btn-sm lp-login">Log in</Link>
+                <Link to="/signup" className="ui-btn ui-btn-primary ui-btn-sm">Sign up</Link>
+              </>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      </header>
 
-      {/* BOTTOM CTA */}
-      <div className="w-[95%] md:w-[85%] mx-auto text-center mt-8 md:mt-12">
-        <Link
-          to="/signup"
-          className="text-[#A7ED02] hover:opacity-90 text-base font-medium inline-block"
-        >
-          View All Features →
-        </Link>
-      </div>
-    </section>
-
-
-    <section id="how-it-works" className="bg-[#0A0A0A] text-white px-4 md:px-16 py-12 md:py-20">
-      
-      {/* TOP TEXT */}
-      <div className="w-[95%] md:w-[85%] mx-auto text-center max-w-2xl">
-        <span className="text-xs md:text-sm bg-[#A7ED02]/10 text-[#A7ED02] px-3 md:px-4 py-1 rounded-full">
-          Simple Process
-        </span>
-
-        <h2 className="mt-4 md:mt-6 text-2xl md:text-4xl font-bold">
-          How It Works
-        </h2>
-
-        <p className="mt-3 md:mt-4 text-gray-400 text-sm md:text-lg">
-          Get started in minutes and begin improving your communication skills today
-        </p>
-      </div>
-
-      {/* STEPS */}
-      <div className="relative w-[95%] md:w-[85%] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 mt-10 md:mt-16">
-        
-        {steps.map((step, i) => (
-          <div
-            key={i}
-            className="relative bg-[#0A0A0A] border border-gray-800 rounded-xl p-4 md:p-6 hover:border-[#A7ED02]/40 transition"
-          >
-            {/* STEP NUMBER */}
-            <div className="absolute -top-3 md:-top-4 left-4 md:left-6 bg-[#A7ED02] text-black text-xs md:text-sm font-semibold px-2 md:px-3 py-0.5 md:py-1 rounded-md">
-              {step.number}
+      <main>
+        <section className="lp-hero">
+          <div className="lp-container lp-hero-grid">
+            <div className="lp-hero-copy">
+              <div className="lp-kicker">AI speaking coach</div>
+              <h1 className="lp-h1">Speak clearly and confidently, one short session at a time.</h1>
+              <p className="lp-lead">
+                Practice real conversations out loud with an AI coach. After every session you get your pace,
+                filler words and specific tips, so you know exactly what to work on.
+              </p>
+              <div className="lp-cta-row">
+                {primaryCta}
+                {!isAuthenticated && (
+                  <button type="button" className="ui-btn ui-btn-secondary lp-btn" onClick={() => scrollTo('how')}>See how it works</button>
+                )}
+              </div>
+              <ul className="lp-proof">
+                <li><CheckIcon /> Free plan, no card needed</li>
+                {dayPass && <li><CheckIcon /> Unlimited day pass for ₹{Number(dayPass.price).toFixed(0)}</li>}
+                <li><CheckIcon /> Works on your phone</li>
+              </ul>
             </div>
+            <ProductPreview />
+          </div>
+        </section>
 
-            {/* ICON */}
-            <div
-              className={`w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg ${step.color}`}
-            >
-              {step.icon}
+        <section id="how" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <h2 className="lp-h2">How it works</h2>
+              <p className="lp-section-sub">Three steps, about five minutes a day.</p>
             </div>
+            <ol className="lp-steps">
+              {steps.map((s, i) => (
+                <li key={s.title} className="lp-step">
+                  <span className="lp-step-num">{i + 1}</span>
+                  <h3 className="lp-h3">{s.title}</h3>
+                  <p>{s.desc}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-            {/* TITLE */}
-            <h3 className="mt-3 md:mt-4 text-base md:text-lg font-semibold">
-              {step.title}
-            </h3>
+        <section id="features" className="lp-section lp-section-alt">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <h2 className="lp-h2">Everything you need to improve</h2>
+              <p className="lp-section-sub">Built around speaking out loud, with feedback you can act on.</p>
+            </div>
+            <div className="lp-features">
+              {features.map(({ Icon, title, desc }) => (
+                <div key={title} className="lp-feature">
+                  <span className="ui-icon-tile"><Icon /></span>
+                  <div>
+                    <h3 className="lp-h3">{title}</h3>
+                    <p>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-            {/* DESC */}
-            <p className="mt-1.5 md:mt-2 text-gray-400 text-sm md:text-base">
-              {step.desc}
-            </p>
-
-            {/* ARROW (only for md+) */}
-            {i !== steps.length - 1 && (
-              <div className="hidden md:block absolute top-1/2 -right-6 transform -translate-y-1/2 text-gray-600 text-2xl">
-                →
+        <section id="pricing" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <h2 className="lp-h2">Simple pricing</h2>
+              <p className="lp-section-sub">Start free. Upgrade for a day or a month when you need more practice.</p>
+            </div>
+            {plansLoading ? (
+              <div className="lp-plans">{[0, 1, 2, 3].map((i) => <div key={i} className="ui-skeleton" style={{ height: 260, borderRadius: 8 }} />)}</div>
+            ) : plans.length === 0 ? (
+              <p className="lp-section-sub" style={{ textAlign: 'center' }}>Plans are not available right now.</p>
+            ) : (
+              <div className="lp-plans">
+                {plans.map((plan) => {
+                  const isDayPass = plan.plan_type === 'day_pass';
+                  const isFree = Number(plan.price) === 0;
+                  const meta = isDayPass
+                    ? 'Unlimited practice until midnight'
+                    : typeof plan.limit_minutes === 'number' ? `${plan.limit_minutes} practice minutes per month` : '';
+                  return (
+                    <div key={plan.id} className={`lp-plan ${isDayPass ? 'is-featured' : ''}`}>
+                      <div className="lp-plan-top">
+                        <h3 className="lp-h3">{plan.name}</h3>
+                        {isDayPass && <span className="ui-chip ui-chip-accent">Best value</span>}
+                      </div>
+                      <div className="lp-plan-price">
+                        {isFree ? 'Free' : `₹${Number(plan.price).toFixed(0)}`}
+                        <span>{isDayPass ? ' / day' : isFree ? '' : ` / ${plan.duration} days`}</span>
+                      </div>
+                      {meta && <p className="lp-plan-meta">{meta}</p>}
+                      {plan.description && <div className="lp-plan-desc" dangerouslySetInnerHTML={{ __html: plan.description }} />}
+                      <Link to={isAuthenticated ? '/profile' : '/signup'} className={`ui-btn ${isDayPass ? 'ui-btn-primary' : 'ui-btn-secondary'} lp-plan-btn`}>
+                        {isFree ? 'Start free' : isDayPass ? 'Get a day pass' : `Choose ${plan.name}`}
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
-        ))}
-      </div>
+        </section>
 
-      {/* CTA BUTTON */}
-      <div className="w-[95%] md:w-[85%] mx-auto text-center mt-10 md:mt-14">
-        <Link
-          to="/signup"
-          className="inline-block bg-[#A7ED02] hover:opacity-90 text-black px-6 py-2.5 md:px-8 md:py-3 rounded-lg font-medium shadow-lg transition text-sm md:text-base"
-        >
-          Start Your First Session →
-        </Link>
-      </div>
-    </section>
-    <section id="pricing" className="bg-[#0A0A0A] text-white py-12 md:py-24">
-      <div className="w-[95%] md:w-[75%] mx-auto">
-        
-        {/* HEADER */}
-        <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-xl md:text-3xl font-bold">
-            Simple, Transparent Pricing
-          </h2>
-          <p className="mt-2 md:mt-3 text-gray-400 text-xs md:text-sm">
-            Choose the plan that fits your journey
-          </p>
-        </div>
-
-        {/* CARDS */}
-        {plansLoading ? (
-          <p className="mt-12 md:mt-16 text-gray-400 text-center text-sm">Loading plans…</p>
-        ) : plans.length === 0 ? (
-          <p className="mt-12 md:mt-16 text-gray-400 text-center text-sm">
-            No plans available at the moment.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-8 md:mt-12 w-full mx-auto">
-            {plans.map((plan) => {
-              const isDayPass = plan.plan_type === 'day_pass';
-              const isStarter = !isDayPass && (Number(plan.price) === 0 || plan.id === starterPlan?.id);
-              const priceLabel = Number(plan.price) === 0 ? 'Free' : `₹${Number(plan.price).toFixed(2)}`;
-              const priceSuffix = isDayPass ? '/ 1 day' : '/ month';
-
-              return (
-                <div
-                  key={plan.id}
-                  className={`relative bg-[#0A0A0A] border rounded-xl p-3 md:p-4 flex flex-col justify-between
-              ${isStarter || isDayPass ? 'border-[#A7ED02]' : 'border-gray-800'}`}
-                >
-                  {/* BADGE */}
-                  {isStarter && (
-                    <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-[#A7ED02] text-black text-[0.65rem] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-semibold">
-                      Starter
-                    </div>
-                  )}
-                  {isDayPass && (
-                    <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-[#A7ED02] text-black text-[0.65rem] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-semibold">
-                      ⚡ Just ₹15
-                    </div>
-                  )}
-
-                  {/* TITLE */}
-                  <div>
-                    <h3 className="text-base md:text-lg font-semibold">{plan.name}</h3>
-
-                    <p className="mt-1 text-[#A7ED02] font-medium text-sm md:text-base">
-                      {priceLabel} {priceSuffix}
-                    </p>
-                    {isDayPass && (
-                      <p className="mt-1 text-gray-400 text-xs md:text-sm">
-                        Unlimited practice for one full day. No subscription.
-                      </p>
-                    )}
-
-                    <div
-                      className="mt-3 md:mt-4 landing-plan-description"
-                      dangerouslySetInnerHTML={{ __html: plan.description || '' }}
-                    />
-                  </div>
-
-                  {/* CTA */}
-                  <Link
-                    to="/signup"
-                    className={`mt-3 md:mt-4 w-full py-2 md:py-2.5 rounded-lg font-medium transition block text-center text-xs md:text-sm
-                ${
-                  isStarter || isDayPass
-                    ? 'bg-[#A7ED02] hover:opacity-90 text-black'
-                    : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
-                }`}
-                  >
-                    {isDayPass ? 'Get Day Pass →' : isStarter ? 'Starter Plan' : 'Get Started'}
-                  </Link>
-                </div>
-              );
-            })}
+        <section className="lp-final">
+          <div className="lp-container lp-final-inner">
+            <div>
+              <h2 className="lp-h2">Your next conversation starts here</h2>
+              <p className="lp-section-sub">Create a free account and finish your first session in under five minutes.</p>
+            </div>
+            {primaryCta}
           </div>
-        )}
-      </div>
-    </section>
-    </div>
-    <section className="relative w-screen max-w-none left-1/2 -translate-x-1/2 bg-[#0B0F19] text-white py-12 md:py-24 px-4 md:px-16 overflow-hidden">
-      
-      {/* BACKGROUND GLOW */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#A7ED02]/10 via-[#A7ED02]/6 to-[#A7ED02]/10 blur-3xl opacity-40"></div>
+        </section>
+      </main>
 
-      <div className="relative max-w-3xl mx-auto text-center px-2">
-        
-        {/* TOP BADGE */}
-        <span className="text-xs md:text-sm bg-gray-800 text-gray-300 px-3 md:px-4 py-1 rounded-full">
-          ✨ Free to start. No credit card required.
-        </span>
-
-        {/* HEADING */}
-        <h2 className="mt-4 md:mt-6 text-2xl md:text-5xl font-bold leading-tight">
-          Ready to Transform Your <br />
-          <span className="text-[#A7ED02]">Communication Skills?</span>
-        </h2>
-
-        {/* DESCRIPTION */}
-        <p className="mt-4 md:mt-6 text-gray-400 max-w-2xl mx-auto text-sm md:text-lg">
-          Join thousands of professionals, students, and leaders who are
-          practicing daily to become more confident speakers. Your first
-          session is free.
-        </p>
-
-        {/* BUTTONS */}
-        <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 mt-6 md:mt-8">
-          <Link
-            to="/signup"
-            className="bg-[#A7ED02] hover:opacity-90 text-black px-6 py-2.5 md:px-8 md:py-3 rounded-lg font-medium shadow-lg transition text-center text-sm md:text-base"
-          >
-            Start Practicing Free →
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => scrollToSection('pricing')}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-6 py-2.5 md:px-8 md:py-3 rounded-lg font-medium border border-gray-700 text-sm md:text-base"
-          >
-            View Pricing
-          </button>
+      <footer className="lp-footer">
+        <div className="lp-container lp-footer-inner">
+          <BrandMark />
+          <div className="lp-footer-links">
+            <Link to="/login">Log in</Link>
+            <Link to="/signup">Sign up</Link>
+            <button type="button" onClick={() => scrollTo('pricing')}>Pricing</button>
+          </div>
+          <span>© {new Date().getFullYear()} articulate.ai</span>
         </div>
-
-        {/* TRUST TEXT */}
-        <p className="mt-6 md:mt-8 text-xs md:text-sm text-gray-500">
-          Trusted by professionals from companies like Google, Amazon, and Microsoft
-        </p>
-      </div>
-    </section>
+      </footer>
     </div>
   );
 }

@@ -196,7 +196,7 @@
 
 /* --- AI Display Area --- */
 .tw-voice-ai-display {
-  background: linear-gradient(135deg, rgba(167, 237, 2, 0.06) 0%, rgba(20, 184, 166, 0.04) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.06) 0%, rgba(20, 184, 166, 0.04) 100%);
   border-radius: 8px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1rem;
@@ -218,7 +218,7 @@
 }
 
 .tw-voice-ai-display--speaking {
-  background: linear-gradient(135deg, rgba(167, 237, 2, 0.14) 0%, rgba(20, 184, 166, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14) 0%, rgba(20, 184, 166, 0.08) 100%);
 }
 
 .tw-voice-ai-display--loading {
@@ -232,11 +232,11 @@
 }
 
 [data-theme="light"] .tw-voice-ai-display {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.06) 0%, rgba(13, 148, 136, 0.03) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.06) 0%, rgba(13, 148, 136, 0.03) 100%);
 }
 
 [data-theme="light"] .tw-voice-ai-display--speaking {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.14) 0%, rgba(13, 148, 136, 0.06) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14) 0%, rgba(13, 148, 136, 0.06) 100%);
 }
 
 .tw-voice-ai-display-label {
@@ -402,18 +402,18 @@
 .tw-voice-user-display--start-cta strong {
   color: var(--accent);
   font-weight: 800;
-  text-shadow: 0 0 20px rgba(167, 237, 2, 0.3);
+  text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.3);
 }
 
 /* High contrast: when showing start CTA, make the user display area stand out */
 .tw-voice-user-display:has(.tw-voice-user-display--start-cta) {
-  background: rgba(167, 237, 2, 0.08);
-  border: 2px solid rgba(167, 237, 2, 0.35);
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 2px solid rgba(var(--accent-rgb), 0.35);
 }
 
 [data-theme="light"] .tw-voice-user-display:has(.tw-voice-user-display--start-cta) {
-  background: rgba(5, 150, 105, 0.08);
-  border: 2px solid rgba(5, 150, 105, 0.35);
+  background: rgba(var(--accent-rgb), 0.08);
+  border: 2px solid rgba(var(--accent-rgb), 0.35);
 }
 
 .tw-voice-user-display--listening {
@@ -775,13 +775,13 @@
 }
 
 .tw-voice-upgrade-plan-card:first-child {
-  background: linear-gradient(135deg, rgba(167, 237, 2, 0.15) 0%, rgba(167, 237, 2, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(var(--accent-rgb), 0.05) 100%);
 }
 
 .tw-voice-upgrade-plan-card--featured {
   position: relative;
-  border: 1px solid rgba(5, 150, 105, 0.5) !important;
-  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.25);
+  border: 1px solid rgba(var(--accent-rgb), 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.25);
 }
 
 .tw-voice-upgrade-plan-flag {
@@ -794,12 +794,12 @@
   letter-spacing: 0.04em;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  color: #047857;
-  background: rgba(5, 150, 105, 0.16);
+  color: var(--accent-strong);
+  background: rgba(var(--accent-rgb), 0.16);
 }
 
 [data-theme="light"] .tw-voice-upgrade-plan-card:first-child {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.15) 0%, rgba(5, 150, 105, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15) 0%, rgba(var(--accent-rgb), 0.05) 100%);
 }
 
 .tw-voice-upgrade-plan-card:nth-child(2) {

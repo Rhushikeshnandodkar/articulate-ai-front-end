@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginWithGoogle, clearError, fetchUser } from '../store/slices/authSlice';
 import { getProfile } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Renders only when VITE_GOOGLE_CLIENT_ID is set and GoogleOAuthProvider wraps the app.
  */
 export default function GoogleSignInButton() {
+  const { theme } = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const authLoading = useSelector((state) => state.auth.loading);
@@ -45,14 +47,15 @@ export default function GoogleSignInButton() {
             dispatch(clearError());
           }}
           useOneTap={false}
-          theme="filled_black"
+          key={theme}
+          theme={theme === 'dark' ? 'filled_black' : 'outline'}
           size="large"
           text="continue_with"
           shape="rectangular"
         />
       </div>
       {authLoading && (
-        <p className="text-center text-xs text-gray-500">Signing in…</p>
+        <p className="ui-hint" style={{ textAlign: 'center' }}>Signing in…</p>
       )}
     </div>
   );

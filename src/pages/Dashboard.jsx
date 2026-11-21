@@ -1,11 +1,15 @@
-import '../styles/dashboard.css';
 import '../styles/voice.css';
+import '../styles/pages.css';
 import { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchUser } from '../store/slices/authSlice';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
 import { getConversations, createConversation, getProfile, getSuggestedTopics, getDailyTopic, getPlans, getMe, subscribeToPlanWithPayment } from '../services/api';
+import {
+  ArrowRightIcon, ClockIcon, FlameIcon, MicIcon, RefreshIcon, SparkIcon, TrophyIcon, LockIcon, CheckIcon,
+} from '../components/icons';
+import { categoryColor } from '../utils/topicColors';
 
 const FALLBACK_TOPICS = [
   { title: 'Job interview', category: 'Career', description: 'Practice answering common interview questions.' },
@@ -17,134 +21,17 @@ const FALLBACK_TOPICS = [
 
 const TOPICS_STORAGE_KEY = 'articulate_recommended_topics';
 
-const CATEGORY_TAG_CLASS = {
-  Tech: 'tw-topic-tag-blue',
-  Career: 'tw-topic-tag-purple',
-  Business: 'tw-topic-tag-purple',
-  Social: 'tw-topic-tag-blue',
-  Leadership: 'tw-topic-tag-purple',
-  Interview: 'tw-topic-tag-purple',
-  Sales: 'tw-topic-tag-blue',
-  Networking: 'tw-topic-tag-purple',
-  General: 'tw-topic-tag-blue',
+function getTagClass() {
+  return '';
+}
+
+const BADGE_COLORS = {
+  bronze: '#C2793B',
+  silver: '#94A3B8',
+  gold: '#EAB308',
+  diamond: '#38BDF8',
+  none: '#A1A1AA',
 };
-function getTagClass(category) {
-  return CATEGORY_TAG_CLASS[category] || 'tw-topic-tag-blue';
-}
-
-function BellIcon() {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-}
-
-function FlameIcon() {
-  return (
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-    </svg>
-  );
-}
-
-function WarnIcon() {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  );
-}
-
-function GlobeIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0h.5a2.5 2.5 0 002.5-2.5V3.935M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function BriefcaseIcon() {
-  return (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-  );
-}
-
-function ChevronLeftIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 4v5m0 0h5M4 9l2.5-2.5A7 7 0 1120 12"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M20 20v-5m0 0h-5M20 15l-2.5 2.5A7 7 0 014 12"
-      />
-    </svg>
-  );
-}
-
-function QuotaRing({ used, limit }) {
-  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  const radius = 52;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (pct / 100) * circumference;
-  let color = '#22c55e';
-  if (pct >= 80) color = '#ef4444';
-  else if (pct >= 50) color = '#f59e0b';
-  return (
-    <div className="tw-quota-ring-wrap">
-      <svg className="tw-quota-ring-svg" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--ring-track)" strokeWidth="8" />
-        <circle
-          cx="60" cy="60" r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform="rotate(-90 60 60)"
-          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-        />
-      </svg>
-      <div className="tw-quota-ring-text">
-        <span className="tw-quota-ring-value" style={{ color }}>{used}</span>
-        <span className="tw-quota-ring-of">of {limit} min</span>
-        <span className="tw-quota-ring-unit">used</span>
-      </div>
-    </div>
-  );
-}
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -357,7 +244,7 @@ export default function Dashboard() {
   const { setPageNavbar } = usePageNavbar();
 
   useEffect(() => {
-    setPageNavbar({ title: 'Dashboard' });
+    setPageNavbar({ title: 'Home' });
     return () => setPageNavbar({});
   }, [setPageNavbar]);
 
@@ -427,10 +314,10 @@ export default function Dashboard() {
     });
   }
 
-  // Last 10 calendar days (oldest on the left, today on the right).
+  // Last 14 calendar days (oldest on the left, today on the right).
   const today = new Date();
-  const lastTenDays = Array.from({ length: 10 }).map((_, idx) => {
-    const offset = 9 - idx;
+  const lastTenDays = Array.from({ length: 14 }).map((_, idx) => {
+    const offset = 13 - idx;
     const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
     const iso = d.toISOString().slice(0, 10);
     const completed = practicedDates.has(iso);
@@ -462,334 +349,239 @@ export default function Dashboard() {
     };
   });
 
-  if (!user) {
+  if (!user || !profileLoaded) {
     return (
-      <div className="tw-dashboard-loading">
-        <p>Loading…</p>
-      </div>
-    );
-  }
-  if (!profileLoaded) {
-    return (
-      <div className="tw-dashboard-loading">
-        <p>Loading…</p>
+      <div className="dash">
+        <div className="ui-skeleton" style={{ height: 28, width: 260, marginBottom: 10 }} />
+        <div className="ui-skeleton" style={{ height: 16, width: 180, marginBottom: 28 }} />
+        <div className="dash-grid">
+          <div className="dash-col">
+            <div className="ui-skeleton" style={{ height: 220, borderRadius: 8 }} />
+            <div className="ui-skeleton" style={{ height: 140, borderRadius: 8 }} />
+          </div>
+          <div className="dash-col">
+            <div className="ui-skeleton" style={{ height: 200, borderRadius: 8 }} />
+          </div>
+        </div>
       </div>
     );
   }
 
   const quotaExceeded = isFreePlan && minutesRemaining <= 0;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = user.first_name || user.username || '';
+  const todayLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  const usagePct = minutesLimit > 0 ? Math.min(100, Math.round((minutesUsed / minutesLimit) * 100)) : 0;
+  const badgeThreshold = profile?.badge_progress?.next_threshold || 0;
+  const badgePct = badgeThreshold > 0 ? Math.min(100, Math.round((gameScore / badgeThreshold) * 100)) : 100;
+  const badgeName = currentBadge === 'none' ? 'No badge yet' : currentBadge.charAt(0).toUpperCase() + currentBadge.slice(1);
+  const practicedToday = lastTenDays[lastTenDays.length - 1]?.completed;
+
+  const heroTopic = dailyTopic
+    ? { title: dailyTopic.title, description: dailyTopic.description }
+    : suggestedTopicObj;
 
   return (
-    <div className="tw-dashboard">
-      <div className="tw-dashboard-grid">
-        <section className="tw-dashboard-card">
-          <h2 className="tw-dashboard-ready-title">Daily practice topic</h2>
-          {quotaExceeded ? (
-            <>
-              <p className="tw-dashboard-ready-desc">
-                You&apos;ve used all your free minutes this month. Upgrade to continue practicing with daily topics and AI feedback.
-              </p>
-              <Link to="/profile" className="tw-btn-primary" style={{ textDecoration: 'none' }}>
-                Upgrade to continue
-              </Link>
-            </>
-          ) : dailyTopic ? (
-            <>
-              <p className="tw-dashboard-daily-topic-title">
-                {dailyTopic.title}
-              </p>
-              <p className="tw-dashboard-ready-desc tw-dashboard-ready-desc-sub">
-                {dailyTopic.description}
-              </p>
-              <div className="tw-dashboard-ready-actions">
-                <button
-                  type="button"
-                  onClick={() => startPractice({ title: dailyTopic.title, description: dailyTopic.description })}
-                  disabled={starting}
-                  className="tw-btn-primary"
-                >
-                  {starting ? 'Starting…' : 'Start today\'s topic'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/talking-agent')}
-                  disabled={starting}
-                  className="tw-btn-secondary"
-                >
-                  Talk with partner
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="tw-dashboard-ready-desc">
-                Your AI partner is ready. Today&apos;s suggested topic is based on your interest in {suggestedTopic}.
-              </p>
-              <div className="tw-dashboard-ready-actions">
-                <button type="button" onClick={() => navigate('/talking-agent')} className="tw-btn-secondary" disabled={starting}>
-                  Talk with partner
-                </button>
-                <button type="button" onClick={() => navigate('/topics')} className="tw-btn-secondary">Choose Topic</button>
-              </div>
-            </>
-          )}
-        </section>
-        {error && <p className="tw-error tw-dashboard-error">{error}</p>}
-
-        <section className="tw-dashboard-card tw-dashboard-badge-card">
-          <h3 className="tw-dashboard-goal-title">Table Topic Badge</h3>
-          <div className="tw-dashboard-badge-main">
-            <div className="tw-dashboard-badge-ring-wrap">
-              {(() => {
-                const threshold = profile?.badge_progress?.next_threshold || 1;
-                const pct = Math.min(100, Math.round((gameScore / threshold) * 100));
-                const r = 34;
-                const circumference = 2 * Math.PI * r;
-                const offset = circumference - (pct / 100) * circumference;
-                return (
-                  <svg className="tw-dashboard-badge-ring-svg" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r={r} fill="none" stroke="var(--ring-track)" strokeWidth="5" />
-                    <circle
-                      cx="40" cy="40" r={r}
-                      fill="none"
-                      stroke="var(--accent)"
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={offset}
-                      transform="rotate(-90 40 40)"
-                      style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                    />
-                  </svg>
-                );
-              })()}
-              <div className="tw-dashboard-badge-ring-inner">
-                {profile?.current_badge_icon ? (
-                  <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
-                    <img
-                      src={profile.current_badge_icon}
-                      alt={`${currentBadge} badge`}
-                      className="tw-dashboard-badge-img"
-                    />
-                  </div>
-                ) : (
-                  <div className={`tw-dashboard-badge-icon tw-dashboard-badge-${currentBadge}`}>
-                    <span className="tw-dashboard-badge-symbol">
-                      {currentBadge === 'diamond' && '◆'}
-                      {currentBadge === 'gold' && '★'}
-                      {currentBadge === 'silver' && '☆'}
-                      {currentBadge === 'bronze' && '⬤'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="tw-dashboard-badge-text">
-              <p className="tw-dashboard-badge-name">
-                {currentBadge.charAt(0).toUpperCase() + currentBadge.slice(1)}
-              </p>
-              <div className="tw-dashboard-badge-progress-wrap">
-                <div className="tw-dashboard-badge-scores">
-                  <span className="tw-dashboard-badge-score-current">{gameScore}</span>
-                  {profile?.badge_progress?.next_badge_name ? (
-                    <>
-                      <span className="tw-dashboard-badge-score-sep">/</span>
-                      <span className="tw-dashboard-badge-score-next">
-                        {profile.badge_progress.next_threshold} ({profile.badge_progress.next_badge_name})
-                      </span>
-                    </>
-                  ) : (
-                    <span className="tw-dashboard-badge-score-label"> score</span>
-                  )}
-                </div>
-                <p className="tw-dashboard-badge-sub">
-                  {profile?.badge_progress?.next_badge_name
-                    ? `${profile.badge_progress.remaining} to ${profile.badge_progress.next_badge_name}`
-                    : 'Complete table topics to increase your score.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {isFreePlan && profileLoaded && (
-        <section className="tw-dashboard-quota">
-          <QuotaRing used={minutesUsed} limit={minutesLimit} />
-          <div className="tw-dashboard-quota-info">
-            <h3 className="tw-dashboard-quota-title">
-              {minutesUsed >= minutesLimit
-                ? 'Monthly quota reached!'
-                : minutesUsed >= minutesLimit * 0.8
-                  ? 'Running low on practice time!'
-                  : 'Free Plan — Monthly Usage'}
-            </h3>
-            <p className={`tw-dashboard-quota-desc ${
-              minutesUsed >= minutesLimit
-                ? 'tw-dashboard-quota-danger'
-                : minutesUsed >= minutesLimit * 0.5
-                  ? 'tw-dashboard-quota-warn'
-                  : ''
-            }`}>
-              {minutesUsed >= minutesLimit
-                ? "You've used all your free minutes this month. Upgrade to keep practicing and improving your communication skills."
-                : minutesUsed >= minutesLimit * 0.8
-                  ? `Only ${minutesRemaining} minutes remaining this month. Upgrade now for more practice time and premium features.`
-                  : `You've used ${minutesUsed} of ${minutesLimit} free minutes this month. Upgrade to unlock more practice time.`}
-            </p>
-            {daypassPlan && (
-              <div className="tw-dashboard-daypass-callout">
-                <div className="tw-dashboard-daypass-info">
-                  <span className="tw-dashboard-daypass-badge">Best value</span>
-                  <span className="tw-dashboard-daypass-text">
-                    <strong>{daypassPlan.name}</strong> — unlimited practice for a day at just ₹{daypassPlan.price.toFixed(0)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="tw-btn-primary tw-dashboard-quota-btn"
-                  onClick={() => setShowQuotaExceededModal(true)}
-                >
-                  Get {daypassPlan.name}
-                </button>
-              </div>
-            )}
-            <Link to="/profile" className="tw-dashboard-quota-link">
-              See all plans
-            </Link>
-          </div>
-        </section>
-      )}
-
-      <section className="tw-dashboard-topics-full">
-        <div className="tw-dashboard-section-head">
-          <h3 className="tw-dashboard-section-title">Recommended Topics</h3>
-          <div className="tw-dashboard-section-head-actions">
-            <Link to="/topics" className="tw-dashboard-view-more-link">
-              View more
-            </Link>
-            {!quotaExceeded && (
-              <button
-                type="button"
-                className="tw-dashboard-view-all"
-                onClick={loadTopics}
-                disabled={topicsRefreshing}
-                aria-label="Refresh recommended topics"
-              >
-                <RefreshIcon />
-              </button>
-            )}
-          </div>
-        </div>
-        {quotaExceeded ? (
-          <p className="tw-muted">
-            Upgrade your plan to see personalized recommended topics and continue practicing.
+    <div className="dash">
+      <header className="ui-page-head">
+        <div>
+          <div className="ui-eyebrow">{todayLabel}</div>
+          <h1 className="ui-h1">{greeting}{firstName ? `, ${firstName}` : ''}</h1>
+          <p className="ui-sub">
+            {practicedToday
+              ? 'Nice work today. Keep the momentum going with another short session.'
+              : 'A few focused minutes a day is all it takes. Your topic for today is ready.'}
           </p>
-        ) : topicsLoading ? (
-          <p className="tw-muted">Loading topics…</p>
-        ) : (
-          <div className="tw-dashboard-topics-scroll-wrap">
-            <button type="button" onClick={() => scrollTopics('left')} className="tw-dashboard-topics-arrow tw-dashboard-topics-arrow-left" aria-label="Scroll left">
-              <ChevronLeftIcon />
-            </button>
-            <div className="tw-dashboard-topics-scroll" ref={topicsScrollRef}>
-            {topicCards.slice(0, 7).map((t) => (
-              <div key={t.title + (t.category || '')} className="tw-topic-card">
-                <div className="tw-topic-card-head">
-                  <span className={`tw-topic-tag ${t.tagClass || getTagClass(t.category)}`}>{t.category}</span>
+        </div>
+        <div className={`dash-streak-pill ${currentStreak > 0 ? 'is-on' : ''}`}>
+          <FlameIcon />
+          <span><strong>{currentStreak}</strong> day streak</span>
+        </div>
+      </header>
+
+      {error && <div className="ui-alert ui-alert-error" style={{ marginBottom: 20 }}>{error}</div>}
+
+      <div className="dash-grid">
+        <div className="dash-col">
+          {/* Today's practice: the one thing to do next */}
+          <section className="ui-card dash-hero">
+            {quotaExceeded ? (
+              <>
+                <div className="dash-hero-top">
+                  <span className="ui-icon-tile"><LockIcon /></span>
+                  <span className="ui-eyebrow">Monthly limit reached</span>
                 </div>
-                <h4 className="tw-topic-card-title">{t.title}</h4>
-                <p className="tw-topic-card-desc">{t.description}</p>
-                <button type="button" onClick={() => startPractice(t)} disabled={starting} className="tw-btn-primary tw-topic-card-btn">
-                  {starting ? 'Starting…' : 'Practice'}
-                </button>
+                <h2 className="dash-hero-title">You&apos;ve used all {minutesLimit} free minutes this month</h2>
+                <p className="dash-hero-desc">Upgrade to keep practicing daily topics and get AI feedback on every session.</p>
+                <div className="dash-hero-actions">
+                  <button type="button" className="ui-btn ui-btn-primary ui-btn-lg" onClick={() => setShowQuotaExceededModal(true)}>
+                    See upgrade options
+                  </button>
+                  <Link to="/profile" className="ui-btn ui-btn-secondary ui-btn-lg">Compare plans</Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="dash-hero-top">
+                  <span className="ui-icon-tile"><SparkIcon /></span>
+                  <span className="ui-eyebrow">{dailyTopic ? "Today's topic" : 'Suggested for you'}</span>
+                  <span className="ui-chip" style={{ marginLeft: 'auto' }}><ClockIcon /> 2–3 min</span>
+                </div>
+                <h2 className="dash-hero-title">{heroTopic.title}</h2>
+                {heroTopic.description && <p className="dash-hero-desc">{heroTopic.description}</p>}
+                <div className="dash-hero-actions">
+                  <button
+                    type="button"
+                    onClick={() => startPractice(dailyTopic ? { title: dailyTopic.title, description: dailyTopic.description } : suggestedTopicObj)}
+                    disabled={starting}
+                    className="ui-btn ui-btn-primary ui-btn-lg"
+                  >
+                    <MicIcon /> {starting ? 'Starting…' : 'Start speaking'}
+                  </button>
+                  <button type="button" onClick={() => navigate('/talking-agent')} disabled={starting} className="ui-btn ui-btn-secondary ui-btn-lg">
+                    Free talk instead
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* Recommended topics */}
+          <section className="ui-card">
+            <div className="ui-card-head">
+              <div>
+                <h3 className="ui-card-title">Recommended for you</h3>
+                <p className="ui-card-sub">Picked from your interests</p>
               </div>
-            ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {!quotaExceeded && (
+                  <button
+                    type="button"
+                    className="ui-icon-btn is-plain"
+                    onClick={loadTopics}
+                    disabled={topicsRefreshing}
+                    aria-label="Refresh recommendations"
+                    title="Refresh"
+                  >
+                    <RefreshIcon className={topicsRefreshing ? 'dash-spin' : ''} />
+                  </button>
+                )}
+                <Link to="/topics" className="ui-link">Browse all</Link>
+              </div>
             </div>
-            <button type="button" onClick={() => scrollTopics('right')} className="tw-dashboard-topics-arrow tw-dashboard-topics-arrow-right" aria-label="Scroll right">
-              <ChevronRightIcon />
-            </button>
-          </div>
-        )}
-      </section>
+            {quotaExceeded ? (
+              <p className="ui-card-sub">Upgrade your plan to get personalized recommendations.</p>
+            ) : topicsLoading ? (
+              <div style={{ display: 'grid', gap: 10 }}>
+                {[0, 1, 2].map((i) => <div key={i} className="ui-skeleton" style={{ height: 58 }} />)}
+              </div>
+            ) : (
+              <ul className="dash-topic-list">
+                {topicCards.slice(0, 5).map((t) => (
+                  <li key={t.title + (t.category || '')} className="dash-topic-row">
+                    <span className="ui-dot" style={{ background: categoryColor(t.category), marginTop: 7 }} />
+                    <div className="dash-topic-text">
+                      <div className="dash-topic-title">{t.title}</div>
+                      <div className="dash-topic-desc">{t.description}</div>
+                    </div>
+                    <span className="ui-chip dash-topic-cat">{t.category}</span>
+                    <button type="button" onClick={() => startPractice(t)} disabled={starting} className="ui-btn ui-btn-secondary ui-btn-sm">
+                      Practice <ArrowRightIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
 
-      <section className="tw-dashboard-stats-bar">
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.total_sessions ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Sessions</span>
-        </div>
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.total_minutes_spoken ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Minutes</span>
-        </div>
-        {isFreePlan && (
-          <div className="tw-dashboard-stat-box">
-            <span className="tw-dashboard-stat-value">
-              {minutesUsed}/{minutesLimit}
-            </span>
-            <span className="tw-dashboard-stat-label">This month (min)</span>
-          </div>
-        )}
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.average_filler_words ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Filler words</span>
-        </div>
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.average_pace_wpm ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Pace (wpm)</span>
-        </div>
-        <div className="tw-dashboard-stat-box">
-          <span className="tw-dashboard-stat-value">{profile?.confidence_score ?? 0}</span>
-          <span className="tw-dashboard-stat-label">Confidence</span>
-        </div>
-      </section>
+        <aside className="dash-col">
+          {/* Consistency */}
+          <section className="ui-card">
+            <div className="ui-card-head">
+              <h3 className="ui-card-title">Consistency</h3>
+              <span className="ui-card-sub">Last 14 days</span>
+            </div>
+            <div className="dash-streak-big">
+              <span className="dash-streak-num">{currentStreak}</span>
+              <span className="dash-streak-label">day streak</span>
+            </div>
+            {streakBroken && currentStreak === 0 && lastActiveDate && (
+              <p className="ui-card-sub" style={{ marginTop: 4 }}>Last practiced {lastActiveLabel}. Start a new streak today.</p>
+            )}
+            <div className="dash-days" role="list">
+              {lastTenDays.map((d, i) => (
+                <div
+                  key={d.iso}
+                  role="listitem"
+                  className={`dash-day ${d.completed ? 'is-done' : ''} ${i === lastTenDays.length - 1 ? 'is-today' : ''}`}
+                  title={`${d.date.toLocaleDateString()} · ${d.completed ? 'Practiced' : 'No practice'}`}
+                >
+                  {d.completed && <CheckIcon />}
+                </div>
+              ))}
+            </div>
+            <div className="dash-mini-stats">
+              <div><span>{longestStreak}</span>Longest streak</div>
+              <div><span>{totalPracticeDays}</span>Practice days</div>
+            </div>
+          </section>
 
-      <section className="tw-dashboard-streak">
-        <div className="tw-dashboard-streak-main">
-          <div className="tw-dashboard-streak-icon">
-            <FlameIcon />
-          </div>
-          <div>
-            <div className="tw-dashboard-streak-label-row">
-              <span className="tw-dashboard-streak-label">Daily streak</span>
-              {streakBroken && currentStreak === 0 && lastActiveDate && (
-                <span className="tw-dashboard-streak-broken">Streak broken on {lastActiveLabel}</span>
+          {/* Badge */}
+          <section className="ui-card">
+            <div className="ui-card-head">
+              <h3 className="ui-card-title">Table topic badge</h3>
+              <TrophyIcon style={{ width: 18, height: 18, color: 'var(--text-dim)' }} />
+            </div>
+            <div className="dash-badge">
+              <span className="dash-badge-medal" style={{ '--medal': BADGE_COLORS[currentBadge] || BADGE_COLORS.none }}>
+                {profile?.current_badge_icon
+                  ? <img src={profile.current_badge_icon} alt="" />
+                  : <TrophyIcon />}
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="dash-badge-name">{badgeName}</div>
+                <div className="ui-card-sub">
+                  {gameScore.toLocaleString()} points
+                  {profile?.badge_progress?.next_badge_name ? ` · ${profile.badge_progress.remaining.toLocaleString()} to ${profile.badge_progress.next_badge_name}` : ''}
+                </div>
+              </div>
+            </div>
+            <div className="ui-progress" style={{ marginTop: 14 }}>
+              <span style={{ width: `${badgePct}%` }} />
+            </div>
+          </section>
+
+          {/* Plan usage (free plan only) */}
+          {isFreePlan && (
+            <section className="ui-card">
+              <div className="ui-card-head">
+                <h3 className="ui-card-title">Free plan</h3>
+                <span className="ui-card-sub">{minutesRemaining} min left</span>
+              </div>
+              <div className="dash-usage-num">
+                {minutesUsed}<span> / {minutesLimit} min used this month</span>
+              </div>
+              <div className={`ui-progress ${usagePct >= 100 ? 'is-danger' : usagePct >= 80 ? 'is-warn' : ''}`} style={{ margin: '10px 0 16px' }}>
+                <span style={{ width: `${usagePct}%` }} />
+              </div>
+              {daypassPlan && (
+                <div className="dash-daypass">
+                  <div>
+                    <div className="dash-daypass-title">{daypassPlan.name}</div>
+                    <div className="ui-card-sub">Unlimited practice for a day · ₹{daypassPlan.price.toFixed(0)}</div>
+                  </div>
+                  <button type="button" className="ui-btn ui-btn-primary ui-btn-sm" onClick={() => setShowQuotaExceededModal(true)}>
+                    Get it
+                  </button>
+                </div>
               )}
-            </div>
-            <div className="tw-dashboard-streak-count-row">
-              <span className="tw-dashboard-streak-count">{currentStreak}</span>
-              <span className="tw-dashboard-streak-unit">days</span>
-            </div>
-            <p className="tw-dashboard-streak-sub">
-              Last active: {lastActiveLabel}
-            </p>
-          </div>
-        </div>
-        <div className="tw-dashboard-streak-days-wrap">
-          <div className="tw-dashboard-streak-days">
-            {lastTenDays.map((d) => (
-              <div
-                key={d.iso}
-                className={`tw-dashboard-streak-day ${d.completed ? 'tw-dashboard-streak-day--done' : ''}`}
-                title={`${d.date.toLocaleDateString()} · ${d.completed ? 'Completed' : 'Not completed'}`}
-              >
-                {d.completed && <span className="tw-dashboard-streak-day-icon">🔥</span>}
-              </div>
-            ))}
-          </div>
-          <div className="tw-dashboard-streak-legend">
-            <span className="tw-dashboard-streak-legend-item">
-              <span className="tw-dashboard-streak-legend-dot tw-dashboard-streak-legend-dot-done" /> Completed day
-            </span>
-            <span className="tw-dashboard-streak-legend-item">
-              <span className="tw-dashboard-streak-legend-dot" /> Missed day
-            </span>
-            <span className="tw-dashboard-streak-meta">
-              Longest streak {longestStreak} days · {totalPracticeDays} practice days
-            </span>
-          </div>
-        </div>
-      </section>
+              <Link to="/profile" className="ui-link" style={{ display: 'inline-block', marginTop: 12 }}>See all plans</Link>
+            </section>
+          )}
+        </aside>
+      </div>
 
       {showQuotaExceededModal && (
         <div

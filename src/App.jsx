@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUser } from './store/slices/authSlice';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -20,6 +20,13 @@ import ConversationDetail from './pages/ConversationDetail';
 import Topics from './pages/Topics';
 import './App.css';
 
+/** Start each page at the top instead of keeping the previous page's scroll. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 function App() {
   const dispatch = useDispatch();
   const { access } = useSelector((state) => state.auth);
@@ -33,6 +40,7 @@ function App() {
   return (
     <ThemeProvider>
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

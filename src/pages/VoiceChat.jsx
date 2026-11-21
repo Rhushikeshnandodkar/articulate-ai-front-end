@@ -1,7 +1,9 @@
 import '../styles/voice.css';
+import '../styles/pages.css';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { voiceChat, endConversation, getConversation } from '../services/api';
+import { PlayIcon, PauseIcon, MicIcon, ChatIcon, ClockIcon, StopIcon } from '../components/icons';
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -15,31 +17,6 @@ const SILENCE_AUTO_SEND_MS = 4000;
 const SPEECH_RMS_THRESHOLD = 0.02;
 /** After the AI finishes speaking, auto-start the mic so the user can reply hands-free. */
 const AUTO_LISTEN_AFTER_AI_MS = 2000;
-
-function PlayIcon({ className, style, ...props }) {
-  return (
-    <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function PauseIcon({ className, style, ...props }) {
-  return (
-    <svg className={className} style={style} fill="currentColor" viewBox="0 0 24 24" width="18" height="18" {...props}>
-      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-    </svg>
-  );
-}
-
-function ClockIcon({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 6v6l4 2" />
-    </svg>
-  );
-}
 
 export default function VoiceChat() {
   const location = useLocation();
@@ -710,166 +687,135 @@ export default function VoiceChat() {
   const isPaused = listening && paused;
   const isBootstrapping = Boolean(conversationId) && !openingReady;
 
+  const transcriptRef = useRef(null);
+  useEffect(() => {
+    const el = transcriptRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [transcriptLines]);
+
+  const stageState = isPaused
+    ? 'paused'
+    : isUserSpeaking
+      ? 'listening'
+      : isAiSpeaking
+        ? 'speaking'
+        : (isProcessing || isBootstrapping)
+          ? 'thinking'
+          : 'ready';
+  const statusLabel = {
+    paused: 'Paused',
+    listening: 'Listening',
+    speaking: 'Coach is speaking',
+    thinking: isBootstrapping ? 'Preparing' : 'Thinking',
+    ready: 'Your turn',
+  }[stageState];
+  const turns = transcriptLines.filter((l) => l.role === 'user').length;
+
+  const hint = isPaused
+    ? 'Paused. Take a moment to think, then tap Continue to pick up where you left off.'
+    : isUserSpeaking
+      ? 'Speak naturally. After 4 seconds of silence the coach replies. Need time to think? Tap Pause.'
+      : isAiSpeaking
+        ? 'Listen to the question. Your mic turns on automatically when the coach finishes.'
+        : isProcessing
+          ? 'Getting a reply…'
+          : isBootstrapping
+            ? 'Preparing your opening question and voice. This usually takes a few seconds.'
+            : 'Tap Start speaking when you are ready. The mic also starts on its own after the coach asks.';
+
   return (
-    <div className="tw-voice-page">
-      <div className="tw-voice-body">
-        <main className="tw-voice-main">
-          {/* Single unified card */}
-          <section className="tw-voice-card tw-voice-card--unified">
-            {/* AI message display */}
-            <div
-              className={`tw-voice-ai-display ${isAiSpeaking ? 'tw-voice-ai-display--speaking' : ''} ${isBootstrapping ? 'tw-voice-ai-display--loading' : ''}`}
+    <div className="agent-layout">
+      <section className="ui-card agent-stage">
+        <div className="agent-stage-head">
+          <span className={`agent-status is-${stageState}`}>{statusLabel}</span>
+          {topic && <span className="agent-topic">Topic: <strong>{topic}</strong></span>}
+          <span className="agent-timer-chip" title="Speaking time"><ClockIcon /> {practiceDisplay}</span>
+          {autoplayBlocked && pendingPlayUrl && (
+            <button type="button" onClick={playPendingReply} className="ui-btn ui-btn-primary ui-btn-sm">
+              <PlayIcon /> Play reply
+            </button>
+          )}
+        </div>
+
+        <div className="agent-stage-body">
+          <div>
+            <div className="agent-prompt-label">{isBootstrapping ? 'Getting ready' : 'Your coach'}</div>
+            <p
+              key={isBootstrapping ? 'bootstrap' : isProcessing ? 'processing' : lastAssistantMessage}
+              className={`agent-prompt ${isBootstrapping || isProcessing ? 'is-muted' : ''}`}
             >
-              <div className="tw-voice-ai-display-label">
-                <span
-                  className={`tw-voice-ai-dot ${isAiSpeaking ? 'tw-voice-ai-dot--active' : ''} ${isBootstrapping ? 'tw-voice-ai-dot--loading' : ''}`}
-                />
-                {isBootstrapping
-                  ? 'Loading'
-                  : isAiSpeaking
-                    ? 'AI is speaking…'
-                    : isProcessing
-                      ? 'AI is thinking…'
-                      : 'AI Partner'}
-              </div>
-              <p key={isBootstrapping ? 'bootstrap' : lastAssistantMessage} className="tw-voice-ai-display-text tw-voice-message-zoom">
-                {isBootstrapping ? (
-                  <>
-                    <span className="tw-voice-loading-lead">Creating your opening question…</span>
-                    <span className="tw-voice-loading-detail">
-                      The AI is generating what you&apos;ll hear first and preparing the voice audio. This usually takes a few seconds — hang tight.
-                    </span>
-                  </>
-                ) : isProcessing ? (
-                  'Processing your response…'
-                ) : (
-                  lastAssistantMessage
-                    || (topic ? `Let's practice "${topic}". Click Start Speaking when you're ready.` : "Click Start Speaking when you're ready.")
-                )}
-              </p>
-            </div>
-
-            {/* Waveform + listening status + hint */}
-            <div className={`tw-voice-wave-wrap ${isUserSpeaking ? 'tw-voice-wave-active' : ''}`}>
-              <span /><span /><span /><span /><span /><span /><span />
-            </div>
-            {isUserSpeaking && (
-              <div className="tw-voice-wave-status">
-                <div className="tw-voice-status-line">
-                  <span className="tw-voice-status-dot" aria-hidden />
-                  Listening…
-                </div>
-                <p className="tw-voice-hint">Stop talking when you&apos;re done — after 4 seconds of silence the AI replies. Need a moment to think? Tap <strong>Pause</strong> to freeze everything, then <strong>Continue</strong>.</p>
-              </div>
-            )}
-
-            {/* User's speech display - when listening, show reassurance; when idle, show start CTA */}
-            <div className="tw-voice-user-display">
-              {isPaused ? (
-                <p className="tw-voice-user-display-placeholder tw-voice-user-display--start-cta">
-                  <span className="tw-voice-listening-icon" aria-hidden>⏸️</span>
-                  Paused — take your time to think. Tap <strong>Continue</strong> to pick up right where you left off.
-                </p>
-              ) : isUserSpeaking ? (
-                <p className="tw-voice-user-display-placeholder tw-voice-user-display--listening">
-                  <span className="tw-voice-listening-icon" aria-hidden>🎧</span>
-                  I&apos;m listening to you — speak naturally.
-                </p>
-              ) : (
-                <p className="tw-voice-user-display-placeholder tw-voice-user-display--start-cta">
-                  {isBootstrapping ? (
-                    <>
-                      <span className="tw-voice-user-display--loading-note">Loading in progress.</span>
-                      When the question appears, listen first — then tap <strong>Start Speaking</strong> to answer.
-                    </>
-                  ) : (
-                    <>The mic starts automatically after the AI asks — or tap <strong>Start Speaking</strong> to begin now.</>
-                  )}
-                </p>
-              )}
-            </div>
-
-            {/* Controls row */}
-            <div className="tw-voice-controls">
-              <button
-                type="button"
-                className={isUserSpeaking ? 'tw-voice-btn-pause' : 'tw-voice-btn-start'}
-                onClick={toggleListening}
-                disabled={status === 'sending' || status === 'playing' || !openingReady}
-              >
-                {!listening ? (
-                  <><PlayIcon style={{ width: 18, height: 18 }} /> Start Speaking</>
-                ) : paused ? (
-                  <><PlayIcon style={{ width: 18, height: 18 }} /> Continue</>
-                ) : (
-                  <><PauseIcon style={{ width: 18, height: 18 }} /> Pause</>
-                )}
-              </button>
-
-              {conversationId && (
-                <button
-                  type="button"
-                  className="tw-voice-end-btn"
-                  onClick={requestEndSession}
-                  disabled={ending}
-                >
-                  {ending ? 'Ending…' : 'End Session to See Report'}
-                </button>
-              )}
-            </div>
-
-            {/* Status indicators */}
-            {isBootstrapping && (
-              <div className="tw-voice-status-line tw-voice-status-line--loading" role="status" aria-live="polite">
-                <span className="tw-voice-loading-bar" aria-hidden />
-                Connecting to the coach…
-              </div>
-            )}
-            {isProcessing && !isBootstrapping && <div className="tw-voice-status-line">Getting reply…</div>}
-            {isAiSpeaking && <div className="tw-voice-status-line tw-voice-status-line--ai">Playing AI reply…</div>}
-            {error && <div className="tw-voice-error">{error}</div>}
-          </section>
-        </main>
-
-        <aside className="tw-voice-sidebar">
-          <h2 className="tw-voice-sidebar-title">Session Stats</h2>
-          <div className="tw-voice-stats-grid">
-            <div className="tw-voice-stat-card tw-voice-stat-card--topic">
-              <p className="tw-voice-stat-label">Current Topic</p>
-              <p className="tw-voice-stat-topic">{topic || 'Practice conversation'}</p>
-            </div>
-
-            <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">Speaking time (this session)</p>
-              <div className="tw-voice-stat-row">
-                <p className="tw-voice-stat-value">{practiceDisplay}</p>
-                <span className="tw-voice-stat-icon" style={{ background: 'rgba(30, 58, 138, 0.15)', color: 'var(--accent)' }}><ClockIcon /></span>
-              </div>
-              <p className="tw-voice-stat-hint">
-                Runs only while <strong>Start Speaking</strong> is on; stops when your response is sent. This is not your subscription minute balance.
-              </p>
-            </div>
-
-            <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">Session progress</p>
-              <div className="tw-voice-stat-row">
-                <p className="tw-voice-stat-value" style={{ color: 'var(--accent)' }}>{sessionProgress}%</p>
-              </div>
-              <p className="tw-voice-stat-hint">
-                Based on <strong>speaking time</strong> only: each full minute adds <strong>10%</strong>; reach <strong>100%</strong> after <strong>10 minutes</strong> of mic-on practice.
-              </p>
-              <div className="tw-voice-stat-bar">
-                <div className="tw-voice-stat-bar-fill" style={{ width: `${sessionProgress}%`, background: 'var(--accent)' }} />
-              </div>
-            </div>
-
-            <div className="tw-voice-stat-card">
-              <p className="tw-voice-stat-label">Turns</p>
-              <p className="tw-voice-stat-value">{transcriptLines.filter(l => l.role === 'user').length}</p>
-            </div>
+              {isBootstrapping
+                ? 'Creating your opening question…'
+                : isProcessing
+                  ? 'Thinking about what you said…'
+                  : (lastAssistantMessage
+                    || (topic ? `Let's practice "${topic}". Tap Start speaking when you're ready.` : "Tap Start speaking when you're ready."))}
+            </p>
           </div>
-        </aside>
-      </div>
+
+          <div className={`agent-visual is-${stageState}`} aria-hidden>
+            <span className="agent-visual-ring" />
+            <span className="agent-visual-ring" />
+            <span className="agent-visual-ring" />
+            <span className="agent-visual-core">{isAiSpeaking ? <ChatIcon /> : <MicIcon />}</span>
+          </div>
+
+          <p className="agent-hint">{hint}</p>
+          {error && <div className="ui-alert ui-alert-error">{error}</div>}
+        </div>
+
+        <div className="agent-controls">
+          <button
+            type="button"
+            className={`ui-btn ${isUserSpeaking ? 'ui-btn-secondary' : 'ui-btn-primary'}`}
+            onClick={toggleListening}
+            disabled={status === 'sending' || status === 'playing' || !openingReady}
+          >
+            {!listening
+              ? (<><MicIcon /> Start speaking</>)
+              : paused
+                ? (<><PlayIcon /> Continue</>)
+                : (<><PauseIcon /> Pause</>)}
+          </button>
+          {conversationId && (
+            <button type="button" className="ui-btn ui-btn-danger" onClick={requestEndSession} disabled={ending}>
+              <StopIcon /> {ending ? 'Ending…' : 'End and see report'}
+            </button>
+          )}
+        </div>
+      </section>
+
+      <aside className="agent-side">
+        <section className="ui-card agent-time-card">
+          <div className="ui-card-head">
+            <h3 className="ui-card-title">Speaking time</h3>
+            <span className="ui-card-sub">{turns} {turns === 1 ? 'answer' : 'answers'}</span>
+          </div>
+          <div className="agent-timer">{practiceDisplay}</div>
+          <div className="ui-progress" style={{ margin: '12px 0 8px' }}>
+            <span style={{ width: `${sessionProgress}%` }} />
+          </div>
+          <p className="ui-card-sub">
+            {sessionProgress >= 100 ? 'You reached the 10-minute goal. Great session.' : `${sessionProgress}% of a 10-minute session. Counts only while your mic is on.`}
+          </p>
+        </section>
+
+        <section className="ui-card">
+          <div className="ui-card-head">
+            <h3 className="ui-card-title">Conversation</h3>
+            <span className="ui-card-sub">{transcriptLines.length} messages</span>
+          </div>
+          <div className="agent-transcript" ref={transcriptRef}>
+            {transcriptLines.length === 0 && <p className="ui-card-sub">Messages will appear here.</p>}
+            {transcriptLines.map((line, i) => (
+              <div key={i} className={`agent-msg ${line.role === 'user' ? 'agent-msg-user' : 'agent-msg-ai'}`}>
+                <span className="agent-msg-who">{line.role === 'user' ? 'You' : 'Coach'}</span>
+                {line.content === '(your speech)' ? <em>Spoken reply</em> : line.content}
+              </div>
+            ))}
+          </div>
+        </section>
+      </aside>
 
       {showEndConfirm && (
         <div className="tw-voice-leave-overlay" role="dialog" aria-modal="true">
@@ -899,6 +845,7 @@ export default function VoiceChat() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

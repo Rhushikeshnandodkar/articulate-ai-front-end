@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser, clearError, fetchUser } from '../store/slices/authSlice';
 import { getProfile } from '../services/api';
-import AuthLogo from '../components/AuthLogo';
+import AuthLayout from '../components/AuthLayout';
 import AuthPasswordInput from '../components/AuthPasswordInput';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import FormError, { formatApiError } from '../components/FormError';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -22,12 +23,8 @@ export default function Login() {
       await dispatch(fetchUser());
       try {
         const profile = await getProfile();
-        if (!profile.has_completed_profile) {
-          navigate('/profile-setup', { replace: true });
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } catch (_) {
+        navigate(profile.has_completed_profile ? '/dashboard' : '/profile-setup', { replace: true });
+      } catch {
         navigate('/profile-setup', { replace: true });
       }
     } else {
@@ -40,104 +37,54 @@ export default function Login() {
     }
   };
 
-  const formatError = (err) => {
-    if (!err) return '';
-    if (typeof err === 'string') return err;
-    if (Array.isArray(err)) return err.join(' ');
-    if (typeof err === 'object') {
-      return Object.entries(err)
-        .map(([k, v]) => (Array.isArray(v) ? v.join(', ') : v))
-        .join(' ');
-    }
-    return String(err);
-  };
+  const hasGoogle = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   return (
-    <div className="min-h-screen bg-[rgb(10,10,10)] text-white flex items-center justify-center px-6 py-8">
-      <div className="w-full max-w-md bg-[rgb(26,26,26)] border border-white/10 rounded-lg md:rounded-2xl p-8 shadow-xl backdrop-blur-sm">
-        {/* LOGO */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <AuthLogo className="w-8 h-8 text-primary" />
-          <span className="text-xl font-semibold">
-            articulate<span className="text-primary">.ai</span>
-          </span>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Log in to continue your practice."
+      footer={<>New to articulate.ai? <Link to="/signup">Create an account</Link></>}
+    >
+      {hasGoogle && (
+        <div className="auth-google">
+          <GoogleSignInButton />
+          <div className="ui-divider-text">or log in with email</div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="ui-form" style={hasGoogle ? { marginTop: 16 } : undefined}>
+        <div className="ui-field">
+          <label className="ui-label" htmlFor="login-username">Email or username</label>
+          <input
+            id="login-username"
+            type="text"
+            name="username"
+            className="ui-input ui-input-lg"
+            placeholder="you@example.com"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            autoComplete="username"
+          />
         </div>
 
-        {/* HEADING */}
-        <h2 className="text-2xl font-bold text-center">
-          Welcome back
-        </h2>
+        <AuthPasswordInput
+          label="Password"
+          id="login-password"
+          name="password"
+          placeholder="Your password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+        />
 
-        <p className="text-gray-400 text-sm text-center mt-2">
-          Sign in to continue your practice
-        </p>
+        <FormError message={error ? formatApiError(error) : ''} />
 
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {error && (
-            <div className="p-3 rounded md:rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {formatError(error)}
-            </div>
-          )}
-
-          {/* Email or username (backend accepts both) */}
-          <div>
-            <label className="text-sm text-gray-300">Email or username</label>
-            <input
-              type="text"
-              name="username"
-              placeholder="you@example.com or your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-              className="w-full mt-1 px-4 py-3 bg-[rgb(26,26,26)] border border-white/10 rounded md:rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary/50 text-sm text-white placeholder-gray-500"
-            />
-          </div>
-
-          <AuthPasswordInput
-            label="Password"
-            id="login-password"
-            name="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-4 bg-primary hover:bg-primary/90 text-slate font-medium py-3 rounded md:rounded-md transition"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-          <>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center" aria-hidden>
-                <span className="w-full border-t border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[rgb(26,26,26)] px-3 text-gray-500">or</span>
-              </div>
-            </div>
-            <GoogleSignInButton />
-          </>
-        )}
-
-        {/* SIGNUP LINK */}
-        <p className="text-center text-sm text-gray-400 mt-6">
-          Don't have an account?{" "}
-          <Link to="/signup" className="text-primary hover:text-secondary transition-colors font-medium hover:underline">
-            Sign up
-          </Link>
-        </p>
-      </div>
-    </div>
+        <button type="submit" disabled={loading} className="ui-btn ui-btn-primary ui-btn-block">
+          {loading ? 'Logging in…' : 'Log in'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

@@ -1,27 +1,18 @@
 import '../styles/conversation-detail.css';
+import '../styles/pages.css';
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePageNavbar } from '../contexts/PageNavbarContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { ArrowLeftIcon, CheckIcon, MicIcon, SparkIcon } from '../components/icons';
 import { getConversation, rephraseText, grammarCheck } from '../services/api';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-
-const RATING_LABELS = {
-  good: 'Good',
-  needs_work: 'Needs work',
-  poor: 'Poor',
+const RATING = {
+  good: { label: 'Good', tone: 'good' },
+  needs_work: { label: 'Needs work', tone: 'warn' },
+  poor: { label: 'Poor', tone: 'poor' },
 };
+const IDEAL_PACE = [120, 150];
+const PACE_SCALE = [60, 210];
 
 function CloseIcon() {
   return (
@@ -33,7 +24,6 @@ function CloseIcon() {
 
 export default function ConversationDetail() {
   const { id } = useParams();
-  const { theme } = useTheme();
   const [conv, setConv] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -86,201 +76,163 @@ export default function ConversationDetail() {
   }, [modal]);
 
   useEffect(() => {
-    setPageNavbar({ title: 'Report' });
+    setPageNavbar({ title: 'Session report' });
     return () => setPageNavbar({});
   }, [setPageNavbar]);
 
   if (loading) {
     return (
-      <div className="tw-detail-page">
-        <div className="tw-detail-loading">
-          <p className="tw-muted">Loading conversation…</p>
-        </div>
+      <div className="rep">
+        <div className="ui-skeleton" style={{ height: 120, borderRadius: 8, marginBottom: 16 }} />
+        <div className="ui-skeleton" style={{ height: 200, borderRadius: 8 }} />
       </div>
     );
   }
 
   if (error || !conv) {
     return (
-      <div className="tw-detail-page">
-        <div className="tw-detail-error-wrap">
-          <p className="tw-detail-error">{error || 'Conversation not found.'}</p>
-          <Link to="/dashboard" className="tw-detail-back">← Back to dashboard</Link>
+      <div className="rep">
+        <div className="ui-card ui-empty">
+          <p className="ui-empty-title">{error || 'Session not found.'}</p>
+          <Link to="/conversations" className="ui-btn ui-btn-secondary ui-btn-sm" style={{ marginTop: 12 }}>Back to sessions</Link>
         </div>
       </div>
     );
   }
 
-  const hasStats = conv.status === 'ended' && (conv.filler_words_count != null || conv.rating);
+  const ended = conv.status === 'ended';
   const startedDate = conv.started_at ? new Date(conv.started_at) : null;
-  const endedDate = conv.ended_at ? new Date(conv.ended_at) : null;
-  const startedLabel = startedDate ? startedDate.toLocaleDateString() : null;
-  const endedLabel = endedDate ? endedDate.toLocaleDateString() : null;
-
-  const userPace = conv.speech_speed_wpm || 0;
-  const targetPace = 140; // ideal conversational pace
+  const dateLabel = startedDate
+    ? startedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + startedDate.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    : '';
+  const duration = conv.duration_seconds != null
+    ? `${Math.floor(conv.duration_seconds / 60)}m ${String(Math.round(conv.duration_seconds % 60)).padStart(2, '0')}s`
+    : null;
+  const pace = conv.speech_speed_wpm != null ? Math.round(conv.speech_speed_wpm) : null;
+  const paceVerdict = pace == null ? null : pace < IDEAL_PACE[0] ? 'A little slow' : pace > IDEAL_PACE[1] ? 'A little fast' : 'Right in the ideal range';
+  const paceOk = pace != null && pace >= IDEAL_PACE[0] && pace <= IDEAL_PACE[1];
+  const pacePos = pace == null ? 0 : Math.max(0, Math.min(100, ((pace - PACE_SCALE[0]) / (PACE_SCALE[1] - PACE_SCALE[0])) * 100));
+  const idealLeft = ((IDEAL_PACE[0] - PACE_SCALE[0]) / (PACE_SCALE[1] - PACE_SCALE[0])) * 100;
+  const idealWidth = ((IDEAL_PACE[1] - IDEAL_PACE[0]) / (PACE_SCALE[1] - PACE_SCALE[0])) * 100;
+  const fillers = Object.entries(conv.filler_words_breakdown || {}).sort((a, b) => b[1] - a[1]);
+  const maxFiller = fillers.length ? fillers[0][1] : 1;
+  const rating = RATING[conv.rating];
+  const userMessages = (conv.messages || []).filter((m) => m.role === 'user').length;
 
   return (
-    <div className="tw-detail-page">
-      <div className="tw-detail-main">
-      {hasStats && (
-        <section className="tw-detail-section">
-          <div className="tw-detail-section-head">
-            <div className="tw-detail-section-head-left">
-              {conv.topic && (
-                <h2 className="tw-detail-section-topic">{conv.topic}</h2>
-              )}
-              <h3 className="tw-detail-section-title">Session stats</h3>
-            </div>
-            {startedLabel && (
-              <p className="tw-detail-section-date">
-                {startedLabel && !endedLabel && `Practiced on ${startedLabel}`}
-                {startedLabel && endedLabel && startedLabel === endedLabel && `Practiced on ${startedLabel}`}
-                {startedLabel && endedLabel && startedLabel !== endedLabel && `${startedLabel} – ${endedLabel}`}
-              </p>
-            )}
-          </div>
-          <p className="tw-detail-section-desc">Use these insights to improve your next practice.</p>
-          <div className="tw-detail-stats-grid">
-            {conv.filler_words_count != null && (
-              <div className="tw-detail-stat">
-                <span className="tw-detail-stat-value">{conv.filler_words_count}</span>
-                <span className="tw-detail-stat-label">Filler words</span>
-                <span className="tw-detail-stat-hint">um, uh, like, etc.</span>
-              </div>
-            )}
-            {conv.pauses_count != null && (
-              <div className="tw-detail-stat">
-                <span className="tw-detail-stat-value">{conv.pauses_count}</span>
-                <span className="tw-detail-stat-label">Pauses</span>
-                <span className="tw-detail-stat-hint">Noticeable pauses</span>
-              </div>
-            )}
-            {conv.speech_speed_wpm != null && (
-              <div className="tw-detail-stat">
-                <span className="tw-detail-stat-value">{Math.round(conv.speech_speed_wpm)}</span>
-                <span className="tw-detail-stat-label">Pace (wpm)</span>
-                <span className="tw-detail-stat-hint">words per minute</span>
-              </div>
-            )}
-            {conv.duration_seconds != null && (
-              <div className="tw-detail-stat">
-                <span className="tw-detail-stat-value">{Math.round(conv.duration_seconds)}s</span>
-                <span className="tw-detail-stat-label">Duration</span>
-              </div>
-            )}
-            {conv.rating && (
-              <div className={`tw-detail-stat ${conv.rating === 'good' ? 'tw-detail-stat-good' : conv.rating === 'needs_work' ? 'tw-detail-stat-warn' : 'tw-detail-stat-poor'}`}>
-                <span className="tw-detail-stat-value">{RATING_LABELS[conv.rating] || conv.rating}</span>
-                <span className="tw-detail-stat-label">Overall</span>
-              </div>
-            )}
-          </div>
+    <div className="rep">
+      <Link to="/conversations" className="rep-back"><ArrowLeftIcon /> Sessions</Link>
 
-          {(conv.filler_words_breakdown && Object.keys(conv.filler_words_breakdown).length > 0) || conv.speech_speed_wpm != null ? (
-            <div className="tw-detail-row">
-              {conv.filler_words_breakdown && Object.keys(conv.filler_words_breakdown).length > 0 && (
-                <div className="tw-detail-card tw-detail-card-spaced tw-detail-card-half">
-                  <h3 className="tw-detail-card-title">Filler words breakdown</h3>
-                  <ul className="tw-detail-filler-list">
-                    {Object.entries(conv.filler_words_breakdown)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([word, count]) => (
-                        <li key={word}><strong>{word}</strong> {count}</li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-              {conv.speech_speed_wpm != null && (
-                <div className="tw-detail-card tw-detail-card-spaced tw-detail-card-half">
-                  <h3 className="tw-detail-card-title">Pace graph</h3>
-                  <div className="tw-detail-pace-chart-wrap">
-                    <Line
-                      data={{
-                        labels: ['Ideal pace', 'Your pace'],
-                        datasets: [
-                          {
-                            label: 'Words per minute',
-                            data: [targetPace, Math.round(userPace)],
-                            borderColor: theme === 'light' ? 'rgba(100, 116, 139, 0.5)' : 'rgba(156, 163, 175, 0.4)',
-                            backgroundColor: ['#22C55E', '#EF4444'],
-                            pointBackgroundColor: ['#22C55E', '#EF4444'],
-                            pointBorderColor: ['#22C55E', '#EF4444'],
-                            pointRadius: 5,
-                            pointHoverRadius: 6,
-                            showLine: false,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: (ctx) => `${ctx.parsed.y} wpm`,
-                            },
-                          },
-                        },
-                        scales: {
-                          x: {
-                            grid: { display: false },
-                            ticks: {
-                              color: theme === 'light' ? '#64748B' : '#9CA3AF',
-                              font: { size: 11 },
-                            },
-                          },
-                          y: {
-                            beginAtZero: true,
-                            grid: {
-                              color: theme === 'light' ? 'rgba(100, 116, 139, 0.2)' : 'rgba(148, 163, 184, 0.25)',
-                            },
-                            ticks: {
-                              color: theme === 'light' ? '#64748B' : '#6B7280',
-                              font: { size: 10 },
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : null}
+      <section className="ui-card rep-hero">
+        <div className="rep-hero-main">
+          <div className="ui-eyebrow">Session report</div>
+          <h1 className="rep-title">{conv.topic}</h1>
+          <div className="rep-meta">
+            {dateLabel && <span>{dateLabel}</span>}
+            {duration && <span>{duration}</span>}
+            <span>{userMessages} {userMessages === 1 ? 'answer' : 'answers'}</span>
+          </div>
+        </div>
+        <div className={`rep-verdict is-${rating ? rating.tone : ended ? 'none' : 'open'}`}>
+          <span className="rep-verdict-label">Overall</span>
+          <span className="rep-verdict-value">{rating ? rating.label : ended ? 'Not rated' : 'Unfinished'}</span>
+        </div>
+      </section>
+
+      {conv.feedback_summary && (
+        <section className="ui-card rep-feedback">
+          <div className="rep-feedback-head"><SparkIcon /> Coach feedback</div>
+          <p>{conv.feedback_summary}</p>
         </section>
       )}
 
-      <section className="tw-detail-section">
-        {!hasStats && conv.topic && (
-          <h2 className="tw-detail-section-topic tw-detail-section-topic-standalone">{conv.topic}</h2>
-        )}
-        <h2 className="tw-detail-section-title">Transcript</h2>
-        <p className="tw-detail-section-desc">Click “Make better” or “Grammar check” on your messages to get suggestions.</p>
+      {ended && (
+        <section className="ui-card rep-metrics">
+          <div className="rep-metric">
+            <span className="rep-metric-label">Pace</span>
+            <span className="rep-metric-value">{pace ?? '—'}<small> wpm</small></span>
+          </div>
+          <div className="rep-metric">
+            <span className="rep-metric-label">Filler words</span>
+            <span className="rep-metric-value">{conv.filler_words_count ?? '—'}</span>
+          </div>
+          <div className="rep-metric">
+            <span className="rep-metric-label">Pauses</span>
+            <span className="rep-metric-value">{conv.pauses_count ?? '—'}</span>
+          </div>
+          <div className="rep-metric">
+            <span className="rep-metric-label">Duration</span>
+            <span className="rep-metric-value">{duration ?? '—'}</span>
+          </div>
+        </section>
+      )}
+
+      {ended && (pace != null || fillers.length > 0) && (
+        <div className="rep-grid">
+          {pace != null && (
+            <section className="ui-card">
+              <div className="ui-card-head">
+                <h2 className="ui-card-title">Speaking pace</h2>
+                <span className={`rep-tag ${paceOk ? 'is-good' : 'is-warn'}`}>{paceVerdict}</span>
+              </div>
+              <div className="rep-pace">
+                <div className="rep-pace-track">
+                  <span className="rep-pace-ideal" style={{ left: `${idealLeft}%`, width: `${idealWidth}%` }} />
+                  <span className="rep-pace-marker" style={{ left: `${pacePos}%` }}><span>{pace}</span></span>
+                </div>
+                <div className="rep-pace-scale">
+                  <span>{PACE_SCALE[0]}</span>
+                  <span>Ideal {IDEAL_PACE[0]}–{IDEAL_PACE[1]} wpm</span>
+                  <span>{PACE_SCALE[1]}</span>
+                </div>
+              </div>
+              <p className="ui-card-sub" style={{ marginTop: 14 }}>
+                {paceOk
+                  ? 'Easy to follow. Keep this rhythm.'
+                  : pace < IDEAL_PACE[0]
+                    ? 'Try shorter pauses between ideas and keep your sentences moving.'
+                    : 'Slow down a little and pause after key points so they land.'}
+              </p>
+            </section>
+          )}
+          {fillers.length > 0 && (
+            <section className="ui-card">
+              <div className="ui-card-head">
+                <h2 className="ui-card-title">Filler words</h2>
+                <span className="ui-card-sub">{conv.filler_words_count} total</span>
+              </div>
+              <ul className="rep-fillers">
+                {fillers.map(([word, count]) => (
+                  <li key={word}>
+                    <span className="rep-filler-word">“{word}”</span>
+                    <span className="rep-filler-bar"><span style={{ width: `${(count / maxFiller) * 100}%` }} /></span>
+                    <span className="rep-filler-count">{count}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+
+      <section className="rep-transcript-section">
+        <div className="rep-section-head">
+          <h2 className="ui-card-title">Transcript</h2>
+          <span className="ui-card-sub">Tap Improve or Grammar on your answers</span>
+        </div>
         {conv.messages && conv.messages.length > 0 ? (
-          <div className="tw-detail-transcript">
+          <div className="ui-card rep-transcript">
             {conv.messages.map((m) => (
-              <div key={m.id} className={`tw-detail-msg tw-detail-msg-${m.role}`}>
-                <p className="tw-detail-msg-role">{m.role === 'user' ? 'You' : 'AI'}</p>
-                <p className="tw-detail-msg-content">{m.content}</p>
+              <div key={m.id} className={`rep-msg ${m.role === 'user' ? 'is-user' : 'is-ai'}`}>
+                <div className="rep-msg-who">{m.role === 'user' ? 'You' : 'Coach'}</div>
+                <p className="rep-msg-text">{m.content}</p>
                 {m.role === 'user' && (
-                  <div className="tw-detail-msg-actions">
-                    <button
-                      type="button"
-                      className="tw-detail-action-btn"
-                      onClick={() => handleRephrase(m.content)}
-                      disabled={loadingAction !== null}
-                    >
-                      {loadingAction === 'rephrase' ? '…' : '✨ Make better'}
+                  <div className="rep-msg-actions">
+                    <button type="button" className="ui-btn ui-btn-secondary ui-btn-sm" onClick={() => handleRephrase(m.content)} disabled={loadingAction !== null}>
+                      <SparkIcon /> {loadingAction === 'rephrase' ? 'Working…' : 'Improve'}
                     </button>
-                    <button
-                      type="button"
-                      className="tw-detail-action-btn grammar"
-                      onClick={() => handleGrammar(m.content)}
-                      disabled={loadingAction !== null}
-                    >
-                      {loadingAction === 'grammar' ? '…' : '✓ Speaking grammar'}
+                    <button type="button" className="ui-btn ui-btn-ghost ui-btn-sm" onClick={() => handleGrammar(m.content)} disabled={loadingAction !== null}>
+                      <CheckIcon /> {loadingAction === 'grammar' ? 'Checking…' : 'Grammar'}
                     </button>
                   </div>
                 )}
@@ -288,9 +240,14 @@ export default function ConversationDetail() {
             ))}
           </div>
         ) : (
-          <p className="tw-muted">No messages in this conversation.</p>
+          <div className="ui-card ui-empty"><p style={{ margin: 0 }}>No messages in this session.</p></div>
         )}
       </section>
+
+      <div className="rep-next">
+        <Link to="/topics" className="ui-btn ui-btn-primary"><MicIcon /> Practice another topic</Link>
+        <Link to="/conversations" className="ui-btn ui-btn-secondary">All sessions</Link>
+      </div>
 
       {modal && (
         <div
@@ -378,7 +335,6 @@ export default function ConversationDetail() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }
