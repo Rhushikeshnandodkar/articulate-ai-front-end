@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /topics
+Disallow: /talking-agent
+Disallow: /conversations
+Disallow: /profile
+Disallow: /profile-setup
+Disallow: /voice
+Disallow: /verify-email
+
+Sitemap: https://articulateai.in/sitemap.xml

@@ -201,7 +201,7 @@ export default function Profile() {
   const interests = (profile?.interests_text || '').split(',').map((s) => s.trim()).filter(Boolean);
   const planStatus = profile?.subscription_active && profile?.subscription_expiry
     ? (currentPlan?.plan_type === 'day_pass'
-      ? 'Valid until midnight tonight'
+      ? 'Valid for 24 hours from purchase'
       : `Renews or expires ${new Date(profile.subscription_expiry).toLocaleDateString()}`)
     : profile?.subscription_plan && !profile?.subscription_active
       ? 'Expired. Renew to keep practicing.'
@@ -253,7 +253,7 @@ export default function Profile() {
                 const hideSwitchToFree = isFreePlan && currentPlan && currentPlan.price > 0;
                 const dayPassUnavailable = isDayPass && !isCurrent && isOnActivePaidPlan;
                 const meta = isDayPass
-                  ? 'Unlimited practice until midnight'
+                  ? 'Unlimited practice for 24 hours'
                   : typeof plan.limit_minutes === 'number'
                     ? `${plan.limit_minutes} practice minutes per month`
                     : '';

@@ -49,6 +49,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           {subtitle && <p className="auth-sub">{subtitle}</p>}
           {children}
           {footer && <div className="auth-footer">{footer}</div>}
+          <p className="auth-legal"><Link to="/terms">Terms</Link> · <Link to="/privacy">Privacy</Link> · <Link to="/refund-policy">Refunds</Link></p>
         </div>
       </main>
     </div>

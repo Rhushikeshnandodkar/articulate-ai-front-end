@@ -8,6 +8,7 @@ import {
   ArrowRightIcon, BookIcon, ChartIcon, CheckIcon, FlameIcon, MicIcon, MoonIcon, SparkIcon, SunIcon, TrophyIcon,
 } from '../components/icons';
 import '../styles/landing.css';
+import FAQ from '../landingFaq.json';
 
 const steps = [
   { title: 'Pick a topic', desc: 'Choose from prompts matched to your goal: interviews, presentations, everyday conversation.' },
@@ -69,6 +70,10 @@ export default function Landing() {
   }, []);
 
   const dayPass = plans.find((p) => p.plan_type === 'day_pass');
+  const hasFreePlan = plans.some((p) => Number(p.price) === 0);
+  const bestValueId = plans
+    .filter((p) => p.plan_type !== 'day_pass' && Number(p.price) > 0)
+    .sort((a, b) => Number(a.price) - Number(b.price))[0]?.id;
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   const primaryCta = isAuthenticated
     ? <Link to="/dashboard" className="ui-btn ui-btn-primary lp-btn">Go to your dashboard <ArrowRightIcon /></Link>
@@ -83,6 +88,7 @@ export default function Landing() {
             <button type="button" onClick={() => scrollTo('how')}>How it works</button>
             <button type="button" onClick={() => scrollTo('features')}>Features</button>
             <button type="button" onClick={() => scrollTo('pricing')}>Pricing</button>
+            <button type="button" onClick={() => scrollTo('faq')}>FAQ</button>
           </nav>
           <div className="lp-nav-actions">
             <button type="button" className="ui-icon-btn is-plain" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
@@ -104,11 +110,11 @@ export default function Landing() {
         <section className="lp-hero">
           <div className="lp-container lp-hero-grid">
             <div className="lp-hero-copy">
-              <div className="lp-kicker">AI speaking coach</div>
-              <h1 className="lp-h1">Speak clearly and confidently, one short session at a time.</h1>
+              <div className="lp-kicker">AI spoken English coach · Made for India</div>
+              <h1 className="lp-h1">Practise spoken English out loud with an AI coach.</h1>
               <p className="lp-lead">
-                Practice real conversations out loud with an AI coach. After every session you get your pace,
-                filler words and specific tips, so you know exactly what to work on.
+                Speak clearly and confidently, one short session at a time. Answer real questions out loud, then see
+                your pace, filler words and simple tips, so you are ready for interviews, college and work.
               </p>
               <div className="lp-cta-row">
                 {primaryCta}
@@ -176,17 +182,34 @@ export default function Landing() {
               <p className="lp-section-sub" style={{ textAlign: 'center' }}>Plans are not available right now.</p>
             ) : (
               <div className="lp-plans">
+                {!hasFreePlan && (
+                  <div className="lp-plan">
+                    <div className="lp-plan-top"><h3 className="lp-h3">Free</h3></div>
+                    <div className="lp-plan-price">Free</div>
+                    <p className="lp-plan-meta">10 practice minutes per month</p>
+                    <div className="lp-plan-desc">
+                      <ul>
+                        <li>5 starter topics</li>
+                        <li>Session report with pace and filler words</li>
+                        <li>No card needed</li>
+                      </ul>
+                    </div>
+                    <Link to={isAuthenticated ? '/dashboard' : '/signup'} className="ui-btn ui-btn-secondary lp-plan-btn">Start free</Link>
+                  </div>
+                )}
                 {plans.map((plan) => {
                   const isDayPass = plan.plan_type === 'day_pass';
                   const isFree = Number(plan.price) === 0;
+                  const isBest = plan.id === bestValueId;
                   const meta = isDayPass
-                    ? 'Unlimited practice until midnight'
-                    : typeof plan.limit_minutes === 'number' ? `${plan.limit_minutes} practice minutes per month` : '';
+                    ? 'Unlimited practice for 24 hours'
+                    : isFree ? '10 practice minutes per month'
+                      : typeof plan.limit_minutes === 'number' ? `${plan.limit_minutes} practice minutes per month` : '';
                   return (
-                    <div key={plan.id} className={`lp-plan ${isDayPass ? 'is-featured' : ''}`}>
+                    <div key={plan.id} className={`lp-plan ${isBest ? 'is-featured' : ''}`}>
                       <div className="lp-plan-top">
                         <h3 className="lp-h3">{plan.name}</h3>
-                        {isDayPass && <span className="ui-chip ui-chip-accent">Best value</span>}
+                        {isBest && <span className="ui-chip ui-chip-accent">Best value</span>}
                       </div>
                       <div className="lp-plan-price">
                         {isFree ? 'Free' : `₹${Number(plan.price).toFixed(0)}`}
@@ -194,7 +217,7 @@ export default function Landing() {
                       </div>
                       {meta && <p className="lp-plan-meta">{meta}</p>}
                       {plan.description && <div className="lp-plan-desc" dangerouslySetInnerHTML={{ __html: plan.description }} />}
-                      <Link to={isAuthenticated ? '/profile' : '/signup'} className={`ui-btn ${isDayPass ? 'ui-btn-primary' : 'ui-btn-secondary'} lp-plan-btn`}>
+                      <Link to={isAuthenticated ? '/profile' : '/signup'} className={`ui-btn ${isBest ? 'ui-btn-primary' : 'ui-btn-secondary'} lp-plan-btn`}>
                         {isFree ? 'Start free' : isDayPass ? 'Get a day pass' : `Choose ${plan.name}`}
                       </Link>
                     </div>
@@ -202,6 +225,23 @@ export default function Landing() {
                 })}
               </div>
             )}
+          </div>
+        </section>
+
+        <section id="faq" className="lp-section lp-section-alt">
+          <div className="lp-container lp-faq-wrap">
+            <div className="lp-section-head">
+              <h2 className="lp-h2">Questions people ask</h2>
+              <p className="lp-section-sub">Everything you need to know before your first practice session.</p>
+            </div>
+            <div className="lp-faq">
+              {FAQ.map(([q, a], i) => (
+                <details key={q} className="lp-faq-item" open={i === 0}>
+                  <summary>{q}</summary>
+                  <p>{a}</p>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -220,11 +260,13 @@ export default function Landing() {
         <div className="lp-container lp-footer-inner">
           <BrandMark />
           <div className="lp-footer-links">
-            <Link to="/login">Log in</Link>
-            <Link to="/signup">Sign up</Link>
             <button type="button" onClick={() => scrollTo('pricing')}>Pricing</button>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/refund-policy">Refunds</Link>
+            <a href="tel:+917620722083">Support: +91 7620722083</a>
           </div>
-          <span>© {new Date().getFullYear()} articulate.ai</span>
+          <span>© {new Date().getFullYear()} Articulate</span>
         </div>
       </footer>
     </div>

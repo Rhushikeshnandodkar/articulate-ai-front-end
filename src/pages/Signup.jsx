@@ -72,7 +72,10 @@ export default function Signup() {
         <button type="submit" disabled={loading} className="ui-btn ui-btn-primary ui-btn-block">
           {loading ? 'Creating account…' : 'Create account'}
         </button>
-        <p className="ui-hint" style={{ textAlign: 'center' }}>We&apos;ll email you a 6-digit code to confirm your address.</p>
+        <p className="ui-hint" style={{ textAlign: 'center' }}>
+          By creating an account you agree to our <Link to="/terms">Terms</Link>, <Link to="/privacy">Privacy Policy</Link> and{' '}
+          <Link to="/refund-policy">Refund Policy</Link>. We&apos;ll email you a 6-digit code to confirm your address.
+        </p>
       </form>
     </AuthLayout>
   );

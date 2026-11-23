@@ -1,0 +1,58 @@
+/* Legal pages (Terms, Privacy, Refund) */
+.legal-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 48px;
+  padding-top: 40px;
+  padding-bottom: 64px;
+}
+
+.legal-nav {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legal-nav a {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.legal-nav a:hover { background: var(--hover-bg); color: var(--text); }
+.legal-nav a.is-active { background: rgba(var(--accent-rgb), 0.1); color: var(--text); font-weight: 600; }
+
+.legal-doc { max-width: 760px; color: var(--text); }
+.legal-doc h1 { margin: 0; font-size: 32px; line-height: 1.2; font-weight: 750; letter-spacing: -0.03em; }
+.legal-meta { margin: 8px 0 28px; font-size: 13.5px; color: var(--text-dim); }
+.legal-doc h2 { margin: 32px 0 10px; font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+.legal-doc p, .legal-doc li { font-size: 15px; line-height: 1.7; color: var(--text); }
+.legal-doc p { margin: 0 0 12px; }
+.legal-doc ul { margin: 0 0 12px; padding-left: 20px; }
+.legal-doc li { margin-bottom: 6px; }
+.legal-doc a { color: var(--accent-ink); font-weight: 500; }
+
+.legal-contact {
+  list-style: none;
+  margin: 12px 0 16px !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.legal-contact li { margin-bottom: 4px; }
+
+@media (max-width: 860px) {
+  .legal-layout { grid-template-columns: 1fr; gap: 20px; padding-top: 20px; }
+  .legal-nav { position: static; flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .legal-nav a { white-space: nowrap; border: 1px solid var(--border); }
+  .legal-doc h1 { font-size: 25px; }
+  .legal-doc p, .legal-doc li { font-size: 14.5px; }
+}

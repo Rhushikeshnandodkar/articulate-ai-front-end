@@ -18,6 +18,8 @@ import VoiceChat from './pages/VoiceChat';
 import TalkingAgent from './pages/TalkingAgent';
 import ConversationDetail from './pages/ConversationDetail';
 import Topics from './pages/Topics';
+import Legal from './pages/Legal';
+import RouteMeta from './components/RouteMeta';
 import './App.css';
 
 /** Start each page at the top instead of keeping the previous page's scroll. */
@@ -41,11 +43,15 @@ function App() {
     <ThemeProvider>
     <BrowserRouter>
       <ScrollToTop />
+      <RouteMeta />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/terms" element={<Legal />} />
+        <Route path="/privacy" element={<Legal />} />
+        <Route path="/refund-policy" element={<Legal />} />
         <Route
           path="/subscriptions"
           element={

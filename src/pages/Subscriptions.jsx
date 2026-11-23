@@ -103,7 +103,7 @@ export default function Subscriptions() {
                   />
                   {isDayPass ? (
                     <p className="tw-profile-plan-meta">
-                      <strong>Unlimited practice</strong> until midnight on the day you buy
+                      <strong>Unlimited practice</strong> for 24 hours from purchase
                     </p>
                   ) : (
                     typeof plan.limit_minutes === 'number' && (
