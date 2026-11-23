@@ -3,9 +3,11 @@ import '../styles/pages.css';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { talkingAgentVoiceChat, startTalkingAgent, endConversation, getConversation } from '../services/api';
-import { PlayIcon, PauseIcon, MicIcon, ChatIcon, ClockIcon, StopIcon } from '../components/icons';
+import { PlayIcon, MicIcon, ChatIcon, ClockIcon, StopIcon } from '../components/icons';
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+/* We only record audio; the server transcribes it (Whisper). The browser speech recognizer is not
+   used: on Android it stops after every short pause, and restarting it plays the system beep. */
+const MIC_SUPPORTED = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof window !== 'undefined' && !!window.MediaRecorder;
 
 /** Session progress bar: 1 min speaking = 10%, 10 min = 100% (mic-on time only). */
 const SESSION_PROGRESS_FULL_SECONDS = 10 * 60;
@@ -13,7 +15,9 @@ const SESSION_PROGRESS_FULL_SECONDS = 10 * 60;
 /** After this much mic silence the response is sent automatically (AI starts talking). */
 const SILENCE_AUTO_SEND_MS = 4000;
 /** RMS above this counts as speech for silence detection (AnalyserNode). */
-const SPEECH_RMS_THRESHOLD = 0.02;
+const SPEECH_RMS_THRESHOLD = 0.015;
+/** Upper bound for the calibrated threshold, so a noisy room never hides normal speech. */
+const MAX_SPEECH_RMS = 0.05;
 /** After the AI finishes speaking, auto-start the mic so the user can reply hands-free. */
 const AUTO_LISTEN_AFTER_AI_MS = 2000;
 
@@ -234,7 +238,7 @@ export default function TalkingAgent() {
         if (conv.topic) setTopic(conv.topic);
 
         const msgs = [...(conv.messages || [])].sort(
-          (a, b) => (a.sequence ?? 0) - (b.sequence ?? 0),
+          (a, b) => (a?.sequence ?? 0) - (b?.sequence ?? 0),
         );
         if (msgs.length > 0) {
           setTranscriptLines(msgs.map((m) => ({ role: m.role, content: m.content })));
@@ -261,64 +265,6 @@ export default function TalkingAgent() {
     return () => { cancelled = true; };
   }, [sessionStarted, conversationId, navigate]);
 
-  useEffect(() => {
-    if (!SpeechRecognition) return;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      let interim = '';
-      let finalText = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalText += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-      if (finalText) accumulatedRef.current = (accumulatedRef.current + ' ' + finalText).trim();
-      if ((finalText && finalText.trim()) || (interim && interim.trim())) {
-        heardSpeechRef.current = true;
-        lastSpeechAtRef.current = Date.now();
-      }
-      // Reuse VoiceChat's approach: show live transcript in the UI only when listening (we keep it minimal here)
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === 'no-speech') return;
-      if (event.error === 'aborted') return;
-      let msg = event.error || 'Speech recognition error';
-      if (event.error === 'not-allowed' || (typeof msg === 'string' && msg.toLowerCase().includes('not allowed'))) {
-        msg = 'Microphone blocked. Use Chrome, allow the mic when prompted, and use https or localhost.';
-      }
-      setError(msg);
-      setListening(false);
-    };
-
-    recognition.onend = () => {
-      if (listeningRef.current && !pausedRef.current) {
-        try { recognition.start(); } catch (_) {}
-      }
-    };
-
-    recognitionRef.current = recognition;
-    if (listening) {
-      try {
-        recognition.start();
-      } catch (e) {
-        const msg = e?.message || 'Failed to start microphone';
-        const isPermission = /not allowed|denied|permission|secure context/i.test(msg);
-        setError(isPermission ? 'Microphone blocked. Use Chrome, allow the mic when prompted.' : msg);
-        setListening(false);
-      }
-    }
-    return () => {
-      try { recognition.abort(); } catch (_) {}
-    };
-  }, [listening]);
 
   const sentByPauseRef = useRef(false);
   const lastSpeechAtRef = useRef(0);
@@ -347,7 +293,7 @@ export default function TalkingAgent() {
       if (text) {
         sendToBackend(text, duration);
       } else {
-        setError('No speech detected. Speak for a moment, then pause — or wait 4 seconds of silence.');
+        setError("We didn't catch anything. Tap Start speaking and try again.");
         setStatus('idle');
       }
       return;
@@ -360,7 +306,7 @@ export default function TalkingAgent() {
   stopListeningAndSendRef.current = stopListeningAndSend;
 
   const startListening = () => {
-    if (!SpeechRecognition || !window.isSecureContext) return;
+    if (!MIC_SUPPORTED || !window.isSecureContext) return;
     if (listeningRef.current) return;
     if (autoListenTimerRef.current) {
       clearTimeout(autoListenTimerRef.current);
@@ -380,43 +326,7 @@ export default function TalkingAgent() {
     setListening(true);
   };
 
-  /* Freeze pause: stop capturing without sending, so the user can think mid-answer. */
-  const pauseListening = () => {
-    if (!listeningRef.current || pausedRef.current) return;
-    const d = getSpokenDuration();
-    if (Number.isFinite(d) && d > 0) setAccumulatedPracticeSeconds((prev) => prev + d);
-    speakingStartRef.current = null;
-    setSegmentElapsedLive(0);
-    pausedRef.current = true;
-    setPaused(true);
-    setStatus('paused');
-    try {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.pause();
-      }
-    } catch (_) {}
-    try {
-      recognitionRef.current?.stop();
-    } catch (_) {}
-  };
 
-  /* Resume from a freeze pause: continue the same answer where the user left off. */
-  const resumeListening = () => {
-    if (!listeningRef.current || !pausedRef.current) return;
-    pausedRef.current = false;
-    setPaused(false);
-    setStatus('listening');
-    speakingStartRef.current = Date.now();
-    lastSpeechAtRef.current = Date.now();
-    try {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-        mediaRecorderRef.current.resume();
-      }
-    } catch (_) {}
-    try {
-      recognitionRef.current?.start();
-    } catch (_) {}
-  };
 
   /* Auto-start the mic a short moment after the AI stops speaking (hands-free turn-taking). */
   const scheduleAutoListen = () => {
@@ -426,7 +336,7 @@ export default function TalkingAgent() {
       if (listeningRef.current) return;
       if (endedByUserRef.current) return;
       if (statusRef.current === 'sending' || statusRef.current === 'playing') return;
-      if (!SpeechRecognition || !window.isSecureContext) return;
+      if (!MIC_SUPPORTED || !window.isSecureContext) return;
       startListening();
     }, AUTO_LISTEN_AFTER_AI_MS);
   };
@@ -436,9 +346,10 @@ export default function TalkingAgent() {
     if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
   }, []);
 
+  /* One button: start the mic, or (while talking) finish the answer and send it right away. */
   const toggleListening = () => {
-    if (!SpeechRecognition) {
-      setError('Speech recognition is not supported. Use Chrome.');
+    if (!MIC_SUPPORTED) {
+      setError('This browser cannot record audio. Use an up-to-date Chrome, Edge or Safari.');
       return;
     }
     if (!window.isSecureContext) {
@@ -447,10 +358,8 @@ export default function TalkingAgent() {
     }
     if (!listening) {
       startListening();
-    } else if (paused) {
-      resumeListening();
     } else {
-      pauseListening();
+      stopListeningAndSend();
     }
   };
 
@@ -461,10 +370,12 @@ export default function TalkingAgent() {
     let silenceCheckId;
     let cancelled = false;
     let speechFrames = 0;
+    const calibration = [];
+    let threshold = SPEECH_RMS_THRESHOLD;
 
     const startRecording = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -491,7 +402,17 @@ export default function TalkingAgent() {
               sum += v * v;
             }
             const rms = Math.sqrt(sum / samples.length);
-            if (rms >= SPEECH_RMS_THRESHOLD) {
+            /* Calibrate on the first ~0.5 s after the mic opens (room noise), then keep the
+               threshold fixed for this answer. Capped so quiet voices still count as speech. */
+            if (calibration.length < 5) {
+              calibration.push(rms);
+              if (calibration.length === 5) {
+                const sorted = [...calibration].sort((x, y) => x - y);
+                threshold = Math.min(MAX_SPEECH_RMS, Math.max(SPEECH_RMS_THRESHOLD, sorted[2] * 2.5));
+              }
+              return;
+            }
+            if (rms >= threshold) {
               speechFrames += 1;
               if (speechFrames >= 2) {
                 heardSpeechRef.current = true;
@@ -530,7 +451,7 @@ export default function TalkingAgent() {
           sentByPauseRef.current = false;
           sentByPauseRef.duration = 0;
           const blob = audioChunksRef.current.length > 0
-            ? new Blob(audioChunksRef.current, { type: 'audio/webm' })
+            ? new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
             : null;
           const text = accumulatedRef.current.trim();
           if (blob && blob.size > 1000) {
@@ -538,14 +459,18 @@ export default function TalkingAgent() {
           } else if (text) {
             sendToBackend(text, duration);
           } else {
-            setError('No speech detected. Speak for a moment, then pause — or wait 4 seconds of silence.');
+            setError("We didn't catch anything. Tap Start speaking and try again.");
             setStatus('idle');
           }
         };
         recorder.start(1000);
         mediaRecorderRef.current = recorder;
       } catch (e) {
-        setError(e?.message || 'Could not access microphone.');
+        setError(e?.name === 'NotAllowedError' || e?.name === 'SecurityError'
+          ? 'Microphone access is blocked. Allow the microphone for this site in your browser settings, then tap Start speaking.'
+          : e?.name === 'NotFoundError'
+            ? 'No microphone was found on this device.'
+            : (e?.message || 'Could not access the microphone.'));
         setListening(false);
       }
     };
@@ -653,10 +578,8 @@ export default function TalkingAgent() {
     );
   }
 
-  const hint = isPaused
-    ? 'Paused. Take a moment to think, then tap Continue to pick up where you left off.'
-    : isUserSpeaking
-      ? 'Speak naturally. After 4 seconds of silence the AI replies. Need time to think? Tap Pause.'
+  const hint = isUserSpeaking
+      ? 'The mic stays on while you talk. Stop for 4 seconds and the AI replies, or tap Done to send now.'
       : isAiSpeaking
         ? 'Listen to the reply. Your mic turns on automatically when the AI finishes.'
         : isProcessing
@@ -708,15 +631,15 @@ export default function TalkingAgent() {
         <div className="agent-controls">
           <button
             type="button"
-            className={`ui-btn ${isUserSpeaking ? 'ui-btn-secondary' : 'ui-btn-primary'}`}
+            className={`ui-btn ${'ui-btn-primary'}`}
             onClick={toggleListening}
             disabled={status === 'sending' || status === 'playing' || !openingReady}
           >
             {!listening
               ? (<><MicIcon /> Start speaking</>)
               : paused
-                ? (<><PlayIcon /> Continue</>)
-                : (<><PauseIcon /> Pause</>)}
+                ? (<><StopIcon /> Done, send</>)
+                : (<><StopIcon /> Done, send</>)}
           </button>
           {conversationId && (
             <button type="button" className="ui-btn ui-btn-danger" onClick={requestEndSession} disabled={ending}>

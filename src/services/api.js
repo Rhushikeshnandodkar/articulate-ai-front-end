@@ -265,11 +265,20 @@ const ARTICULATE_BASE = `${API_ORIGIN}/api/articulate`;
  * - audioBlob: optional; if provided, backend uses STT to transcribe (captures um, uh, etc.).
  * - welcome: if true and conversationId set, returns AI welcome message (first message for new conversation).
  */
+/** File name matching the recording format (Chrome/Android: webm, iPhone Safari: mp4) so the server transcribes it correctly. */
+function audioFileName(blob) {
+  const t = (blob && blob.type) || '';
+  if (t.includes('mp4') || t.includes('m4a') || t.includes('aac')) return 'audio.mp4';
+  if (t.includes('ogg')) return 'audio.ogg';
+  if (t.includes('wav')) return 'audio.wav';
+  return 'audio.webm';
+}
+
 export async function voiceChat({ text = '', conversationId = null, audioBlob = null, welcome = false, spokenDurationSeconds = 0, solo = false }) {
   let res;
   if (audioBlob != null) {
     const form = new FormData();
-    form.append('audio', audioBlob, 'audio.webm');
+    form.append('audio', audioBlob, audioFileName(audioBlob));
     if (conversationId != null) form.append('conversation_id', String(conversationId));
     if (solo) form.append('solo', '1');
     if (spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0) {
@@ -362,7 +371,7 @@ export async function talkingAgentVoiceChat({ text = '', conversationId = null, 
   let res;
   if (audioBlob != null) {
     const form = new FormData();
-    form.append('audio', audioBlob, 'audio.webm');
+    form.append('audio', audioBlob, audioFileName(audioBlob));
     if (conversationId != null) form.append('conversation_id', String(conversationId));
     if (spokenDurationSeconds && Number.isFinite(spokenDurationSeconds) && spokenDurationSeconds > 0) {
       form.append('spoken_duration_seconds', String(spokenDurationSeconds.toFixed(2)));
