@@ -8,6 +8,7 @@ import { getProfile, getPlans } from '../services/api';
 import {
   HomeIcon, MicIcon, BookIcon, ChartIcon, SettingsIcon, HelpIcon, LogoutIcon, CloseIcon,
 } from './icons';
+import { Logo } from './Logo';
 import '../styles/ui.css';
 
 const navGroups = [
@@ -28,14 +29,6 @@ const navGroups = [
   },
 ];
 const allNavItems = navGroups.flatMap((g) => g.items);
-
-function LogoMark() {
-  return (
-    <span className="app-brand-mark">
-      <MicIcon />
-    </span>
-  );
-}
 
 export default function AppLayout() {
   const { pathname } = useLocation();
@@ -87,12 +80,11 @@ export default function AppLayout() {
         {sidebarOpen && <div className="app-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden />}
 
         <aside className={`app-sidebar ${sidebarOpen ? 'is-open' : ''}`} aria-label="Sidebar">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="app-sidebar-top">
             <Link to="/dashboard" className="app-brand">
-              <LogoMark />
-              <span>articulate<span className="app-brand-dot">.ai</span></span>
+              <Logo size={26} />
             </Link>
-            <button type="button" className="ui-icon-btn is-plain app-menu-btn" style={{ marginBottom: 18 }} onClick={() => setSidebarOpen(false)} aria-label="Close menu">
+            <button type="button" className="ui-icon-btn is-plain app-menu-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
               <CloseIcon />
             </button>
           </div>

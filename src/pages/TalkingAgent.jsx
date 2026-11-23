@@ -3,7 +3,7 @@ import '../styles/pages.css';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { talkingAgentVoiceChat, startTalkingAgent, endConversation, getConversation } from '../services/api';
-import { PlayIcon, MicIcon, ChatIcon, ClockIcon, StopIcon } from '../components/icons';
+import { PlayIcon, PauseIcon, MicIcon, ChatIcon, ClockIcon, StopIcon } from '../components/icons';
 
 /* We only record audio; the server transcribes it (Whisper). The browser speech recognizer is not
    used: on Android it stops after every short pause, and restarting it plays the system beep. */
@@ -113,12 +113,20 @@ export default function TalkingAgent() {
   /** Assigned later; starts the mic ~2s after the AI finishes speaking. */
   const scheduleAutoListenRef = useRef(() => {});
   const autoListenTimerRef = useRef(null);
+  /** The coach reply that is currently playing, so ending the session can silence it. */
+  const currentAudioRef = useRef(null);
+  /** True once the page is closed, so a late reply never starts playing on another page. */
+  const unmountedRef = useRef(false);
 
   const playAudio = useCallback((url, options = {}) => {
-    if (!url) return;
+    if (!url || endedByUserRef.current || unmountedRef.current) return;
     const { revokeOnEnd = false, autoListen = true } = options;
     const audio = new Audio(url);
     audio.volume = 1;
+    if (currentAudioRef.current) {
+      try { currentAudioRef.current.pause(); } catch (_) {}
+    }
+    currentAudioRef.current = audio;
     let cleaned = false;
     let safetyId = null;
     const cleanup = () => {
@@ -183,6 +191,7 @@ export default function TalkingAgent() {
       const { blob, text: aiText } = isAudio
         ? await talkingAgentVoiceChat({ audioBlob: audioBlobOrText, conversationId, spokenDurationSeconds })
         : await talkingAgentVoiceChat({ text: audioBlobOrText, conversationId, spokenDurationSeconds });
+      if (endedByUserRef.current || unmountedRef.current) return;
       let url = null;
       if (blob) {
         url = URL.createObjectURL(blob);
@@ -342,11 +351,53 @@ export default function TalkingAgent() {
   };
   scheduleAutoListenRef.current = scheduleAutoListen;
 
-  useEffect(() => () => {
-    if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
+      const a = currentAudioRef.current;
+      if (a) {
+        try { a.pause(); } catch (_) {}
+        currentAudioRef.current = null;
+      }
+    };
   }, []);
 
-  /* One button: start the mic, or (while talking) finish the answer and send it right away. */
+  /* Think pause: freeze the mic and timers without sending, so the user can think mid-answer.
+     While paused, the 4-second silence auto-send is off. */
+  const pauseListening = () => {
+    if (!listeningRef.current || pausedRef.current) return;
+    const d = getSpokenDuration();
+    if (Number.isFinite(d) && d > 0) setAccumulatedPracticeSeconds((prev) => prev + d);
+    speakingStartRef.current = null;
+    setSegmentElapsedLive(0);
+    pausedRef.current = true;
+    setPaused(true);
+    setStatus('paused');
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
+    } catch (_) {}
+  };
+
+  /* Continue the same answer where the user left off; the silence countdown restarts. */
+  const resumeListening = () => {
+    if (!listeningRef.current || !pausedRef.current) return;
+    pausedRef.current = false;
+    setPaused(false);
+    setStatus('listening');
+    speakingStartRef.current = Date.now();
+    lastSpeechAtRef.current = Date.now();
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
+    } catch (_) {}
+  };
+
+  /* Start the mic, pause it to think, or continue after a pause. */
   const toggleListening = () => {
     if (!MIC_SUPPORTED) {
       setError('This browser cannot record audio. Use an up-to-date Chrome, Edge or Safari.');
@@ -358,8 +409,10 @@ export default function TalkingAgent() {
     }
     if (!listening) {
       startListening();
+    } else if (paused) {
+      resumeListening();
     } else {
-      stopListeningAndSend();
+      pauseListening();
     }
   };
 
@@ -487,10 +540,32 @@ export default function TalkingAgent() {
     };
   }, [listening, sendToBackend]);
 
+  /* Ending a session silences the coach, closes the mic and cancels any pending auto-start. */
+  const stopAllAudio = () => {
+    endedByUserRef.current = true;
+    if (autoListenTimerRef.current) {
+      clearTimeout(autoListenTimerRef.current);
+      autoListenTimerRef.current = null;
+    }
+    const a = currentAudioRef.current;
+    if (a) {
+      try { a.pause(); a.removeAttribute('src'); a.load(); } catch (_) {}
+      currentAudioRef.current = null;
+    }
+    sentByPauseRef.current = false;
+    speakingStartRef.current = null;
+    pausedRef.current = false;
+    setPaused(false);
+    listeningRef.current = false;
+    setListening(false);
+    setStatus('idle');
+  };
+
   const handleEndConversation = async () => {
     if (!conversationId) return;
     setEnding(true);
     setEndedByUser(true);
+    stopAllAudio();
     try {
       await endConversation(conversationId);
       navigate(`/conversations/${conversationId}`, { replace: true });
@@ -578,8 +653,10 @@ export default function TalkingAgent() {
     );
   }
 
-  const hint = isUserSpeaking
-      ? 'The mic stays on while you talk. Stop for 4 seconds and the AI replies, or tap Done to send now.'
+  const hint = isPaused
+    ? 'Paused. Take your time to think, then tap Continue to pick up where you left off.'
+    : isUserSpeaking
+      ? 'Speak naturally. After 4 seconds of silence the AI replies. Need time to think? Tap Pause.'
       : isAiSpeaking
         ? 'Listen to the reply. Your mic turns on automatically when the AI finishes.'
         : isProcessing
@@ -631,15 +708,15 @@ export default function TalkingAgent() {
         <div className="agent-controls">
           <button
             type="button"
-            className={`ui-btn ${'ui-btn-primary'}`}
+            className={`ui-btn ${isUserSpeaking ? 'ui-btn-secondary' : 'ui-btn-primary'}`}
             onClick={toggleListening}
             disabled={status === 'sending' || status === 'playing' || !openingReady}
           >
             {!listening
               ? (<><MicIcon /> Start speaking</>)
               : paused
-                ? (<><StopIcon /> Done, send</>)
-                : (<><StopIcon /> Done, send</>)}
+                ? (<><PlayIcon /> Continue</>)
+                : (<><PauseIcon /> Pause</>)}
           </button>
           {conversationId && (
             <button type="button" className="ui-btn ui-btn-danger" onClick={requestEndSession} disabled={ending}>

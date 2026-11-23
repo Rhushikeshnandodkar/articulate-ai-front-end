@@ -14,6 +14,25 @@ const LEVEL_LABEL = {
   advanced: 'Advanced',
 };
 
+/** Free plan: 5 topics, one from each category in turn, so free users get variety. */
+function pickFreeTopics(list, count = 5) {
+  const byCat = new Map();
+  list.forEach((t) => {
+    const c = t.category || 'General';
+    if (!byCat.has(c)) byCat.set(c, []);
+    byCat.get(c).push(t);
+  });
+  const queues = [...byCat.values()];
+  const picked = [];
+  for (let round = 0; picked.length < count && queues.some((q) => q.length > round); round += 1) {
+    for (const q of queues) {
+      if (picked.length >= count) break;
+      if (q[round]) picked.push(q[round]);
+    }
+  }
+  return picked;
+}
+
 export default function Topics() {
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -78,16 +97,20 @@ export default function Topics() {
   const currentPlan = plans.find((p) => p.id === currentPlanId);
   const isFreePlan = !currentPlan || currentPlan.price === 0;
 
+  /* Topics this user can open (free plan gets a varied set of 5). */
+  const available = useMemo(() => (isFreePlan ? pickFreeTopics(topics, 5) : topics), [topics, isFreePlan]);
+
+  /* Category tabs only for categories the user actually has. */
   const categories = useMemo(() => {
     const set = new Set();
-    topics.forEach((t) => {
+    available.forEach((t) => {
       if (t.category) set.add(t.category);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [topics]);
+  }, [available]);
 
   const filtered = useMemo(() => {
-    const limited = isFreePlan ? topics.slice(0, 5) : topics;
+    const limited = available;
     const query = search.trim().toLowerCase();
     const list = limited.filter((t) => {
       if (level !== 'all' && t.level !== level) return false;
@@ -104,7 +127,7 @@ export default function Topics() {
       if (aDone === bDone) return 0;
       return aDone ? 1 : -1;
     });
-  }, [topics, search, level, category, attemptFilter, isFreePlan]);
+  }, [available, search, level, category, attemptFilter]);
 
   const handleStart = async (topicObj) => {
     if (!topicObj?.title) return;
@@ -151,7 +174,7 @@ export default function Topics() {
   };
 
   const lockedCount = isFreePlan ? Math.max(0, topics.length - 5) : 0;
-  const visibleTopics = isFreePlan ? topics.slice(0, 5) : topics;
+  const visibleTopics = available;
   const categoryCounts = visibleTopics.reduce((acc, t) => {
     const c = t.category || 'General';
     acc[c] = (acc[c] || 0) + 1;

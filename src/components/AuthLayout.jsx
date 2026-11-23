@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { MicIcon, CheckIcon } from './icons';
+import { CheckIcon } from './icons';
+import { Logo } from './Logo';
 import '../styles/auth.css';
 
 export function BrandMark({ to = '/' }) {
   return (
-    <Link to={to} className="auth-brand">
-      <span className="app-brand-mark"><MicIcon /></span>
-      <span>articulate<span className="app-brand-dot">.ai</span></span>
+    <Link to={to} className="brand-link" aria-label="Articulate home">
+      <Logo size={28} />
     </Link>
   );
 }

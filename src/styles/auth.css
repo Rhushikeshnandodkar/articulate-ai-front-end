@@ -7,7 +7,7 @@
   color: var(--text);
 }
 
-.auth-brand {
+.brand-link {
   display: inline-flex;
   align-items: center;
   gap: 10px;

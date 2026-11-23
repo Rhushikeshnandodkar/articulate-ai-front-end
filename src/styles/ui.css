@@ -16,7 +16,7 @@
   z-index: 50;
   display: flex;
   flex-direction: column;
-  padding: 20px 14px 16px;
+  padding: 0 14px 16px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   transition: transform 0.25s ease;
@@ -26,12 +26,28 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 10px 18px;
+  padding: 0 10px;
   text-decoration: none;
   color: var(--text);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+/* Logo row: same height as the top header so the logo lines up with the page title. */
+.app-sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  flex-shrink: 0;
+  margin: 0 -14px 4px;
+  padding: 0 14px 0 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 1023px) {
+  .app-sidebar-top { height: 58px; }
 }
 
 .app-brand-mark {
@@ -670,3 +686,24 @@
 
 .profile-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 640px) { .profile-form-row { grid-template-columns: 1fr; } }
+
+
+/* ---------- Brand logo (Voice A) ---------- */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--logo-size, 28px) * 0.36);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand-logo svg { flex-shrink: 0; }
+
+.brand-logo-word {
+  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: calc(var(--logo-size, 28px) * 0.78);
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--text);
+}
