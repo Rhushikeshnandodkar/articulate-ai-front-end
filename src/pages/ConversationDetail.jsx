@@ -141,7 +141,7 @@ export default function ConversationDetail() {
 
       {conv.feedback_summary && (
         <section className="ui-card rep-feedback">
-          <div className="rep-feedback-head"><SparkIcon /> Coach feedback</div>
+          <div className="rep-feedback-head"><SparkIcon /> Feedback</div>
           <p>{conv.feedback_summary}</p>
         </section>
       )}
@@ -224,7 +224,7 @@ export default function ConversationDetail() {
           <div className="ui-card rep-transcript">
             {conv.messages.map((m) => (
               <div key={m.id} className={`rep-msg ${m.role === 'user' ? 'is-user' : 'is-ai'}`}>
-                <div className="rep-msg-who">{m.role === 'user' ? 'You' : 'Coach'}</div>
+                <div className="rep-msg-who">{m.role === 'user' ? 'You' : 'Partner'}</div>
                 <p className="rep-msg-text">{m.content}</p>
                 {m.role === 'user' && (
                   <div className="rep-msg-actions">

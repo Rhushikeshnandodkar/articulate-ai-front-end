@@ -69,7 +69,7 @@ export default function Subscriptions() {
               </div>
               <div className="auth-brand-text">
                 <span className="auth-brand-name">articulate.ai</span>
-                <span className="auth-brand-sub">Voice communication coach</span>
+                <span className="auth-brand-sub">Voice communication partner</span>
               </div>
             </div>
             <h1 className="auth-card-title">Choose your plan</h1>

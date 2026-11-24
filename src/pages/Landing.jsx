@@ -12,7 +12,7 @@ import FAQ from '../landingFaq.json';
 
 const steps = [
   { title: 'Pick a topic', desc: 'Choose from prompts matched to your goal: interviews, presentations, everyday conversation.' },
-  { title: 'Talk with your coach', desc: 'Answer out loud. The AI listens, asks follow-ups and keeps the conversation going.' },
+  { title: 'Talk with your partner', desc: 'Answer out loud. The AI listens, asks follow-ups and keeps the conversation going.' },
   { title: 'Read your report', desc: 'See your pace, filler words and pauses, with specific tips for your next session.' },
 ];
 
@@ -110,8 +110,8 @@ export default function Landing() {
         <section className="lp-hero">
           <div className="lp-container lp-hero-grid">
             <div className="lp-hero-copy">
-              <div className="lp-kicker">AI spoken English coach · Made for India</div>
-              <h1 className="lp-h1">Practice spoken English out loud with an AI coach.</h1>
+              <div className="lp-kicker">AI spoken English partner · Made for India</div>
+              <h1 className="lp-h1">Practice spoken English out loud with an AI partner.</h1>
               <p className="lp-lead">
                 Speak clearly and confidently, one short session at a time. Answer real questions out loud, then see
                 your pace, filler words and simple tips, so you are ready for interviews, college and work.

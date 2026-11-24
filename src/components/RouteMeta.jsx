@@ -2,14 +2,14 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const SITE = 'https://articulateai.in';
-const DEFAULT_TITLE = 'Articulate – Practice Spoken English with an AI Coach';
-const DEFAULT_DESC = 'Practice spoken English out loud with an AI coach and get instant feedback on pace, filler words and pauses. Made for learners across India. Start free, plans from ₹99 a month.';
+const DEFAULT_TITLE = 'Articulate – Practice Spoken English with an AI Partner';
+const DEFAULT_DESC = 'Practice spoken English out loud with an AI partner and get instant feedback on pace, filler words and pauses. Made for learners across India. Start free, plans from ₹99 a month.';
 
 /* Title and description per public page (what search engines show). App pages get a plain title. */
 const META = {
   '/': [DEFAULT_TITLE, DEFAULT_DESC],
-  '/login': ['Log in – Articulate', 'Log in to Articulate and continue practising spoken English with your AI coach.'],
-  '/signup': ['Create a free account – Articulate', 'Sign up free and start practising spoken English with an AI speaking coach. Get feedback on pace, filler words and pauses.'],
+  '/login': ['Log in – Articulate', 'Log in to Articulate and continue practicing spoken English with your AI partner.'],
+  '/signup': ['Create a free account – Articulate', 'Sign up free and start practicing spoken English with an AI speaking partner. Get feedback on pace, filler words and pauses.'],
   '/terms': ['Terms and Conditions – Articulate', 'Terms and Conditions for using Articulate, the AI spoken English practice app, under Indian law.'],
   '/privacy': ['Privacy Policy – Articulate', 'How Articulate collects, uses and protects your personal data under the Digital Personal Data Protection Act, 2023.'],
   '/refund-policy': ['Refund and Cancellation Policy – Articulate', 'How plans, cancellations and refunds work for Articulate purchases.'],

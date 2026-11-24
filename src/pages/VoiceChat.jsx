@@ -696,7 +696,7 @@ export default function VoiceChat() {
   const statusLabel = {
     paused: 'Paused',
     listening: 'Listening',
-    speaking: 'Coach is speaking',
+    speaking: 'Your partner is speaking',
     thinking: isBootstrapping ? 'Preparing' : 'Thinking',
     ready: 'Your turn',
   }[stageState];
@@ -705,14 +705,14 @@ export default function VoiceChat() {
   const hint = isPaused
     ? 'Paused. Take your time to think, then tap Continue to pick up where you left off.'
     : isUserSpeaking
-      ? 'Speak naturally. After 4 seconds of silence the coach replies. Need time to think? Tap Pause.'
+      ? 'Speak naturally. After 4 seconds of silence your partner replies. Need time to think? Tap Pause.'
       : isAiSpeaking
-        ? 'Listen to the question. Your mic turns on automatically when the coach finishes.'
+        ? 'Listen to the question. Your mic turns on automatically when your partner finishes.'
         : isProcessing
           ? 'Getting a reply…'
           : isBootstrapping
             ? 'Preparing your opening question and voice. This usually takes a few seconds.'
-            : 'Tap Start speaking when you are ready. The mic also starts on its own after the coach asks.';
+            : 'Tap Start speaking when you are ready. The mic also starts on its own after your partner asks.';
 
   return (
     <div className="agent-layout">
@@ -730,7 +730,7 @@ export default function VoiceChat() {
 
         <div className="agent-stage-body">
           <div>
-            <div className="agent-prompt-label">{isBootstrapping ? 'Getting ready' : 'Your coach'}</div>
+            <div className="agent-prompt-label">{isBootstrapping ? 'Getting ready' : 'Your partner'}</div>
             <p
               key={isBootstrapping ? 'bootstrap' : isProcessing ? 'processing' : lastAssistantMessage}
               className={`agent-prompt ${isBootstrapping || isProcessing ? 'is-muted' : ''}`}
@@ -800,7 +800,7 @@ export default function VoiceChat() {
             {transcriptLines.length === 0 && <p className="ui-card-sub">Messages will appear here.</p>}
             {transcriptLines.map((line, i) => (
               <div key={i} className={`agent-msg ${line.role === 'user' ? 'agent-msg-user' : 'agent-msg-ai'}`}>
-                <span className="agent-msg-who">{line.role === 'user' ? 'You' : 'Coach'}</span>
+                <span className="agent-msg-who">{line.role === 'user' ? 'You' : 'Partner'}</span>
                 {line.content === '(your speech)' ? <em>Spoken reply</em> : line.content}
               </div>
             ))}

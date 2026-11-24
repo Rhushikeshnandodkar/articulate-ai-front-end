@@ -20,7 +20,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
         <div className="auth-aside-body">
           <h2 className="auth-aside-title">Speak clearly and confidently, one short session at a time.</h2>
           <ul className="auth-aside-points">
-            <li><CheckIcon /> Practice real conversations with an AI coach</li>
+            <li><CheckIcon /> Practice real conversations with an AI partner</li>
             <li><CheckIcon /> See your pace, filler words and pauses</li>
             <li><CheckIcon /> Get specific tips after every session</li>
           </ul>
