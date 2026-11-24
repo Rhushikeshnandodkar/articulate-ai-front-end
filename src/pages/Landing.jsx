@@ -111,7 +111,7 @@ export default function Landing() {
           <div className="lp-container lp-hero-grid">
             <div className="lp-hero-copy">
               <div className="lp-kicker">AI spoken English coach · Made for India</div>
-              <h1 className="lp-h1">Practise spoken English out loud with an AI coach.</h1>
+              <h1 className="lp-h1">Practice spoken English out loud with an AI coach.</h1>
               <p className="lp-lead">
                 Speak clearly and confidently, one short session at a time. Answer real questions out loud, then see
                 your pace, filler words and simple tips, so you are ready for interviews, college and work.
